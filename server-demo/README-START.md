@@ -35,16 +35,15 @@
 ### Plugins:
 - `plugins/` - Diretório de plugins
 
-## Arquivos NÃO NECESSÁRIOS para start local
+## Arquivos REMOVIDOS (não necessários para start local)
 
-Estes arquivos são úteis para deploy/produção, mas não são necessários para executar `start.bat` ou `start.sh` localmente:
+Estes arquivos foram removidos pois não são necessários para executar `start.bat` ou `start.sh` localmente:
 
-- `deploy-git.sh` - Script de deploy via Git
-- `deploy-rsync.ps1` - Script de deploy via rsync (PowerShell)
-- `deploy-vps.sh` - Script de deploy para VPS
-- `upload-to-vps.ps1` - Script de upload para VPS
-- `minecraft.service` - Arquivo systemd (apenas para produção Linux)
-- `docker-compose.yml` - Docker Compose (apenas se usar Docker)
+- `deploy-git.sh` - Script de deploy via Git (removido)
+- `deploy-rsync.ps1` - Script de deploy via rsync (removido)
+- `deploy-vps.sh` - Script de deploy para VPS (removido)
+- `upload-to-vps.ps1` - Script de upload para VPS (removido)
+- `minecraft.service` - Arquivo systemd (removido - apenas para produção Linux)
 
 ## Arquivos GERADOS AUTOMATICAMENTE (não devem estar no repo)
 
@@ -57,7 +56,17 @@ Estes arquivos são gerados automaticamente pelo servidor em runtime:
 - `logs/` - Diretório de logs
 - `cache/` - Diretório de cache
 
-## Arquivos VAZIOS que podem ser removidos
+## Arquivos GERADOS AUTOMATICAMENTE (podem ser removidos se não customizados)
 
-- `permissions.yml` - Arquivo vazio (será criado automaticamente pelo servidor se necessário)
+Estes arquivos são gerados automaticamente pelo Paper na primeira execução. Se você não os customizou, podem ser removidos e serão recriados:
+
+- `bukkit.yml` - Configurações do Bukkit (gerado automaticamente)
+- `spigot.yml` - Configurações do Spigot (gerado automaticamente)
+- `paper.yml` - Configurações do Paper (gerado automaticamente)
+- `commands.yml` - Configurações de comandos (gerado automaticamente)
+- `help.yml` - Configurações de ajuda (gerado automaticamente)
+- `wepif.yml` - Configurações do WorldEdit (gerado automaticamente se plugin instalado)
+- `permissions.yml` - Permissões (gerado automaticamente - já removido por estar vazio)
+
+**Nota:** Se você customizou algum desses arquivos, mantenha-os no repositório.
 
