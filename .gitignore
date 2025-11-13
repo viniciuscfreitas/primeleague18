@@ -36,24 +36,11 @@ buildNumber.properties
 # Minecraft Server - Runtime files
 # ============================================
 
-# Worlds (mundos do servidor)
-world/
-world_nether/
-world_the_end/
-**/world/
-**/world_nether/
-**/world_the_end/
+# Nota: Mundos (world/, world_nether/, world_the_end/) são MANTIDOS no repositório
+# pois contêm construções importantes
 
-# World data files
-*.dat
-*.dat_old
+# Apenas arquivos temporários de lock são ignorados
 session.lock
-*.mca
-**/region/
-**/playerdata/
-**/data/
-**/stats/
-**/uid.dat
 
 # Server runtime files (gerados automaticamente)
 usercache.json
@@ -230,3 +217,4 @@ ENV/
 # - Documentação: *.md
 # - Docker: docker-compose.yml, minecraft.service
 # - Configuração: jdk8.txt, eula.txt
+# - Mundos do Minecraft: world/, world_nether/, world_the_end/ (contêm construções)
