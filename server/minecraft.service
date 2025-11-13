@@ -1,0 +1,30 @@
+[Unit]
+Description=Minecraft Server - Paper 1.8.8 PvP
+After=network.target
+
+[Service]
+Type=simple
+User=minecraft
+Group=minecraft
+WorkingDirectory=/opt/minecraft
+ExecStart=/opt/minecraft/start.sh
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Limites de recursos
+LimitNOFILE=65536
+MemoryMax=8G
+MemoryHigh=7G
+
+# Seguranca
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/minecraft
+
+[Install]
+WantedBy=multi-user.target
+

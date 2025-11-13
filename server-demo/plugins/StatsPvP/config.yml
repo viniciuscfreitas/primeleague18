@@ -1,0 +1,39 @@
+# Branding Prime League
+branding:
+  nome: "PRIME LEAGUE"
+  cor: "§b"  # Cyan
+  site: "www.primeleague.com.br"
+
+# Scoreboard
+scoreboard:
+  titulo: "§b§lPRIME LEAGUE"  # Cyan bold
+  site: "§7www.primeleague.com.br"
+  separador: "§b§l=== RANKING ==="
+  top-mostrar: 10
+  ordenar-por: "kdr"  # kdr ou kills
+  cor-numero: "§b"    # Cyan para números
+  cor-nome: "§b"      # Cyan para nomes
+  cor-kdr: "§7"       # Cinza para KDR
+
+# Chat
+chat:
+  prefixo: "§b[PRIME]"  # Cyan prefix
+  formato: "§b[PRIME] §8[§7{0}§8] §b{1}: §7{2}"
+  cores:
+    kdr-alto: "§c"      # >= 2.0
+    kdr-medio: "§e"     # >= 1.0
+    kdr-baixo: "§a"     # >= 0.5
+    kdr-ruim: "§7"      # < 0.5
+
+# UX
+ux:
+  titulos-kill: true
+  titulos-death: true
+  sons: true
+  mostrar-branding-titulos: true  # Mostrar "PRIME LEAGUE" nos títulos
+  milestones:
+    - kills: 5
+      titulo: "§b§lPRIME LEAGUE §6§lASSASSINO"
+    - kills: 10
+      titulo: "§b§lPRIME LEAGUE §c§lMÁQUINA"
+

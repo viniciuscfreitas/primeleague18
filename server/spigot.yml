@@ -1,0 +1,146 @@
+# This is the main configuration file for Spigot.
+# As you can see, there's tons to configure. Some options may impact gameplay, so use
+# with caution, and make sure you know what each option does before configuring.
+# For a reference for any variable inside this file, check out the Spigot wiki at
+# http://www.spigotmc.org/wiki/spigot-configuration/
+# 
+# If you need help with the configuration or have any questions related to Spigot,
+# join us at the IRC or drop by our forums and leave a post.
+# 
+# IRC: #spigot @ irc.spi.gt ( http://www.spigotmc.org/pages/irc/ )
+# Forums: http://www.spigotmc.org/
+
+config-version: 8
+settings:
+  debug: false
+  save-user-cache-on-stop-only: false
+  moved-too-quickly-threshold: 100.0
+  filter-creative-items: true
+  moved-wrongly-threshold: 0.0625
+  netty-threads: 4
+  timeout-time: 60
+  restart-on-crash: true
+  restart-script: start.bat
+  user-cache-size: 1000
+  late-bind: false
+  player-shuffle: 0
+  int-cache-limit: 1024
+  sample-count: 12
+  bungeecord: false
+  attribute:
+    maxHealth:
+      max: 2048.0
+    movementSpeed:
+      max: 2048.0
+    attackDamage:
+      max: 2048.0
+commands:
+  tab-complete: 0
+  silent-commandblock-console: false
+  spam-exclusions:
+  - /skill
+  log: true
+  replace-commands:
+  - setblock
+  - summon
+  - testforblock
+  - tellraw
+timings:
+  enabled: false
+  verbose: false
+  server-name-privacy: false
+  hidden-config-entries:
+  - database
+  - settings.bungeecord-addresses
+  history-interval: 60
+  history-length: 3600
+messages:
+  whitelist: You are not whitelisted on this server!
+  unknown-command: Unknown command. Type "/help" for help.
+  server-full: The server is full!
+  outdated-client: Outdated client! Please use {0}
+  outdated-server: Outdated server! I'm still on {0}
+  restart: Server is restarting
+stats:
+  disable-saving: true
+  forced-stats:
+    achievement:
+      openInventory: 1
+world-settings:
+  default:
+    verbose: false
+    item-despawn-rate: 3000
+    merge-radius:
+      item: 3.0
+      exp: 4.0
+    enable-zombie-pigmen-portal-spawns: false
+    wither-spawn-sound-radius: 0
+    arrow-despawn-rate: 600
+    view-distance: 6
+    hanging-tick-frequency: 100
+    max-bulk-chunks: 5
+    mob-spawn-range: 0
+    hunger:
+      walk-exhaustion: 0.2
+      sprint-exhaustion: 0.8
+      combat-exhaustion: 0.3
+      regen-exhaustion: 3.0
+    max-tnt-per-tick: 20
+    growth:
+      cactus-modifier: 100
+      cane-modifier: 100
+      melon-modifier: 100
+      mushroom-modifier: 100
+      pumpkin-modifier: 100
+      sapling-modifier: 100
+      wheat-modifier: 100
+      netherwart-modifier: 100
+    entity-activation-range:
+      animals: 8
+      monsters: 8
+      misc: 4
+    ticks-per:
+      hopper-transfer: 8
+      hopper-check: 8
+      animal-spawns: 400
+      monster-spawns: 400
+    hopper-amount: 1
+    anti-xray:
+      enabled: true
+      engine-mode: 1
+      hide-blocks:
+      - 14
+      - 15
+      - 16
+      - 21
+      - 48
+      - 49
+      - 54
+      - 56
+      - 73
+      - 74
+      - 82
+      - 129
+      - 130
+      replace-blocks:
+      - 1
+      - 5
+    random-light-updates: false
+    save-structure-info: false
+    entity-tracking-range:
+      players: 48
+      animals: 8
+      monsters: 8
+      misc: 8
+      other: 16
+    nerf-spawner-mobs: false
+    chunks-per-tick: 100
+    clear-tick-list: true
+    max-tick-time:
+      tile: 50
+      entity: 50
+    zombie-aggressive-towards-villager: true
+    dragon-death-sound-radius: 0
+    seed-village: 10387312
+    seed-feature: 14357617
+    max-entity-collisions: 4

@@ -1,0 +1,8 @@
+# Payment Webhook Configuration
+payment:
+  webhook-port: 8080
+  mercado-pago:
+    webhook-secret: "YOUR_MERCADOPAGO_WEBHOOK_SECRET"
+  stripe:
+    webhook-secret: "YOUR_STRIPE_WEBHOOK_SECRET"
+

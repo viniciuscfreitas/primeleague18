@@ -1,0 +1,15 @@
+# Stats Plugin Configuration
+stats:
+  # Salvar automaticamente após X kills/deaths (0 = sempre salvar)
+  auto-save-interval: 5
+
+  # Cache de top players em segundos
+  top-cache-duration: 300
+
+# Mensagens
+messages:
+  kill: "§a+1 Kill §7(Killstreak: §e{killstreak}§7)"
+  death: "§c-1 Death §7(Killstreak resetado)"
+  killstreak-milestone: "§6§lKILLSTREAK! §e{killstreak} kills!"
+
+

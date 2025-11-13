@@ -1,0 +1,16 @@
+name: PrimeleagueElo
+version: 1.0.0
+main: com.primeleague.elo.EloPlugin
+api-version: 1.8
+author: Primeleague
+description: ELO Rating System for Primeleague server
+depend: [PrimeleagueCore]
+commands:
+  elo:
+    description: Mostra ELO do player
+    usage: /elo [player]
+  topelo:
+    description: Mostra top ELO
+    usage: /topelo [page]
+    aliases: [topelo]
+

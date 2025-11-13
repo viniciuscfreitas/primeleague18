@@ -1,0 +1,7 @@
+name: PrimeleagueCore
+version: 1.0.0
+main: com.primeleague.core.CorePlugin
+api-version: 1.8
+author: Primeleague
+description: Core plugin for Primeleague server - PostgreSQL integration
+

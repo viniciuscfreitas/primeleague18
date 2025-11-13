@@ -1,0 +1,16 @@
+name: PrimeleagueStats
+version: 1.0.0
+main: com.primeleague.stats.StatsPlugin
+api-version: 1.8
+author: Primeleague
+description: Stats plugin for PvP combat tracking
+depend: [PrimeleagueCore]
+commands:
+  stats:
+    description: Mostra estatísticas de combate
+    usage: /stats [player]
+  top:
+    description: Mostra top players
+    usage: /top [kills|kdr|killstreak] [page]
+
+

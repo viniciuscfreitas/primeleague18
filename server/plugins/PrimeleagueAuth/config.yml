@@ -1,0 +1,9 @@
+# Authentication Configuration
+auth:
+  salt: "primeleague-salt-2025"
+  access-codes:
+    - "WELCOME2025"
+    - "BETA2025"
+    - "TEST123"
+    - "DEMO2025"
+

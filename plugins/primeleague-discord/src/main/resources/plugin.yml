@@ -1,0 +1,8 @@
+name: PrimeleagueDiscord
+version: 1.0.0
+main: com.primeleague.discord.DiscordPlugin
+api-version: 1.8
+author: Primeleague
+description: Discord Bot plugin for Primeleague server
+depend: [PrimeleagueCore]
+

@@ -1,0 +1,59 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Compiled JARs (except original source jars if needed)
+*.jar
+!original-*.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+*.log.gz
+gc.log
+
+# Minecraft server files
+world/
+world_nether/
+world_the_end/
+*.dat
+*.dat_old
+session.lock
+usercache.json
+banned-players.json
+banned-ips.json
+ops.json
+whitelist.json
+
+# Cache
+cache/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+

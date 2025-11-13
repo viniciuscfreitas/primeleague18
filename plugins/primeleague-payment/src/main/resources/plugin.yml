@@ -1,0 +1,8 @@
+name: PrimeleaguePayment
+version: 1.0.0
+main: com.primeleague.payment.PaymentPlugin
+api-version: 1.8
+author: Primeleague
+description: Payment webhook plugin for Primeleague server
+depend: [PrimeleagueCore]
+

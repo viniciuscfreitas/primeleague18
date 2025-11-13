@@ -1,0 +1,13 @@
+# PostgreSQL Database Configuration
+# Para testar localmente apontando para VPS, use:
+# host: primeleague.com.br (ou IP da VPS)
+# Para usar na VPS, use:
+# host: localhost
+database:
+  host: localhost
+  port: 54321
+  database: primeleague
+  user: postgres
+  password: postgres
+  pool-size: 10
+

@@ -1,0 +1,26 @@
+# ELO Rating System
+elo:
+  # K Factor para PvP (padrão: 32)
+  k-factor: 32
+  # ELO Mínimo (padrão: 0)
+  min-elo: 0
+  # ELO Inicial (padrão: 1000)
+  initial-elo: 1000
+  # ELO por evento (vencer evento)
+  event-win-elo: 50
+  # ELO por sobrevivente de evento vencedor
+  event-survivor-elo: 25
+  # ELO por vitória de clan
+  clan-win-elo: 10
+
+# Cache de top ELO (em segundos)
+cache:
+  top-elo-duration: 300
+
+# Mensagens
+messages:
+  elo-change: "§7ELO: {change} §7({elo})"
+  elo-event-win: "§a+{amount} ELO §7(Evento: Vencedor)"
+  elo-event-survivor: "§a+{amount} ELO §7(Evento: Sobrevivente)"
+  elo-clan-win: "§a+{amount} ELO §7(Clan: Vitória)"
+
