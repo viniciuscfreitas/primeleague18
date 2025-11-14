@@ -451,6 +451,7 @@ public class PunishManager {
 
     /**
      * Integrar ClansPlugin (adicionar alerta se player tem clan)
+     * Grug Brain: Usar API pública ao invés de acessar manager diretamente
      */
     private void integrateClans(UUID playerUuid, String type, String reason, UUID staffUuid) {
         org.bukkit.plugin.Plugin clansPlugin = plugin.getServer().getPluginManager().getPlugin("PrimeleagueClans");
@@ -462,7 +463,10 @@ public class PunishManager {
                     String alertType = type.equals("ban") ? "BAN" :
                                       type.equals("mute") ? "PUNISHMENT" : "WARNING";
                     String alertMsg = "Punição aplicada: " + type.toUpperCase() + " - " + reason;
-                    cp.getClansManager().addAlert(clan.getId(), playerUuid, alertType, alertMsg, staffUuid, null);
+                    // Gerar punishmentId único (playerUuid + timestamp)
+                    String punishmentId = playerUuid.toString() + "_" + System.currentTimeMillis();
+                    // Usar API pública ao invés de acessar manager diretamente
+                    cp.addPunishmentAlert(clan.getId(), playerUuid, alertType, alertMsg, punishmentId, staffUuid);
                 }
             } catch (Exception e) {
                 plugin.getLogger().warning("Erro ao integrar ClansPlugin: " + e.getMessage());

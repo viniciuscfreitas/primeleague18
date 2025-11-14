@@ -29,20 +29,9 @@ public class ChatListener implements Listener {
 
         // Verificar se evento já foi cancelado (ex: player mutado)
         // Grug Brain: Se já foi cancelado (mute), não processar spam/filtros
+        // PunishListener já cancela com prioridade LOWEST, então apenas verificar isCancelled()
         if (event.isCancelled()) {
             return; // Já foi cancelado (ex: mute) - não processar mais nada
-        }
-
-        // Verificar mute (ANTES de processar spam/filtros)
-        // Grug Brain: Verificar mute primeiro para evitar mensagens duplicadas de spam
-        org.bukkit.plugin.Plugin punishPlugin = plugin.getServer().getPluginManager().getPlugin("PrimeleaguePunishments");
-        if (punishPlugin != null && punishPlugin.isEnabled()) {
-            // Usar API do PunishPlugin (método estático ou getInstance)
-            if (com.primeleague.punishments.PunishPlugin.getInstance().getPunishManager().isMuted(player.getUniqueId())) {
-                event.setCancelled(true);
-                // Mensagem já enviada pelo PunishListener - não processar spam/filtros
-                return;
-            }
         }
 
         // Clan chat - deixar passar (ClansPlugin cuida)

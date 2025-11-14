@@ -535,10 +535,10 @@ public class ClansPlugin extends JavaPlugin {
     }
 
     /**
-     * API pública para plugin de punições futuro
+     * API pública para plugin de punições
      */
-    public void addPunishmentAlert(int clanId, UUID playerUuid, String type, String message, String punishmentId) {
-        getClansManager().addAlert(clanId, playerUuid, type, message, null, punishmentId);
+    public void addPunishmentAlert(int clanId, UUID playerUuid, String type, String message, String punishmentId, UUID createdBy) {
+        getClansManager().addAlert(clanId, playerUuid, type, message, createdBy, punishmentId);
     }
 
     /**

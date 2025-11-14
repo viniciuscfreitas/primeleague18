@@ -37,11 +37,11 @@ public class PunishListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
+    @EventHandler(priority = EventPriority.LOW)
     public void onAsyncPlayerChat(AsyncPlayerChatEvent event) {
         org.bukkit.entity.Player player = event.getPlayer();
 
-        // Verificar mute (LOWEST para executar antes de outros listeners)
+        // Verificar mute (LOW para executar antes de LOWEST)
         // Grug Brain: Verificar primeiro para evitar que spam check processe mensagens mutadas
         if (plugin.getPunishManager().isMuted(player.getUniqueId())) {
             event.setCancelled(true);
