@@ -134,17 +134,18 @@ public class AuthListener implements Listener {
             stmt.executeUpdate();
 
             // Notificar Discord Bot (se estiver habilitado)
-            // Grug Brain: Verificação simples via PluginManager
+            // Grug Brain: Usa casting direto (softdepend) - mais rápido e seguro que reflection
             org.bukkit.plugin.Plugin discordPlugin = plugin.getServer().getPluginManager().getPlugin("PrimeleagueDiscord");
             if (discordPlugin != null && discordPlugin.isEnabled()) {
                 try {
-                    // Usar reflexão para evitar dependência de compilação
-                    java.lang.reflect.Method getDiscordBot = discordPlugin.getClass().getMethod("getDiscordBot");
-                    Object bot = getDiscordBot.invoke(discordPlugin);
+                    // Casting direto via instanceof (softdepend) - sem reflection
+                    if (discordPlugin instanceof com.primeleague.discord.DiscordPlugin) {
+                        com.primeleague.discord.DiscordPlugin dp = (com.primeleague.discord.DiscordPlugin) discordPlugin;
+                        com.primeleague.discord.bot.DiscordBot bot = dp.getDiscordBot();
                     if (bot != null) {
-                        java.lang.reflect.Method sendMethod = bot.getClass().getMethod("sendApprovalRequest", UUID.class, String.class, String.class);
-                        sendMethod.invoke(bot, playerUuid, name, ip);
+                            bot.sendApprovalRequest(playerUuid, name, ip);
                         plugin.getLogger().info("Pending login criado para " + name + " - Discord Bot notificado");
+                        }
                     }
                 } catch (Exception e) {
                     plugin.getLogger().warning("Erro ao notificar Discord Bot: " + e.getMessage());

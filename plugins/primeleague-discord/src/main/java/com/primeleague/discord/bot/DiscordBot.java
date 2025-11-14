@@ -43,19 +43,26 @@ public class DiscordBot {
 
             jda.awaitReady();
 
-            // Registrar Slash Commands
+            // Registrar Slash Commands (PT-BR)
             CommandListUpdateAction commands = jda.updateCommands();
             commands.addCommands(
-                new CommandData("register", "Registre sua conta no servidor Minecraft")
+                new CommandData("registrar", "Registre sua conta no servidor Minecraft")
                     .addOptions(
                         new OptionData(OptionType.STRING, "codigo", "Seu código de acesso único", true),
-                        new OptionData(OptionType.STRING, "username", "Seu username do Minecraft (3-16 caracteres)", true)
-                    )
+                        new OptionData(OptionType.STRING, "usuario", "Seu nome de usuário do Minecraft (3-16 caracteres)", true)
+                    ),
+                new CommandData("status", "Mostra status de todas as suas contas Minecraft vinculadas")
             );
-            commands.queue();
-
-            plugin.getLogger().info("Discord Bot conectado: " + jda.getSelfUser().getName());
-            plugin.getLogger().info("Slash Commands registrados: /register");
+            commands.queue(
+                (success) -> {
+                    plugin.getLogger().info("Discord Bot conectado: " + jda.getSelfUser().getName());
+                    plugin.getLogger().info("✅ Slash Commands registrados com sucesso: /registrar, /status");
+                },
+                (error) -> {
+                    plugin.getLogger().severe("❌ Erro ao registrar Slash Commands: " + error.getMessage());
+                    error.printStackTrace();
+                }
+            );
             return true;
         } catch (LoginException | InterruptedException e) {
             plugin.getLogger().severe("Erro ao conectar Discord Bot: " + e.getMessage());

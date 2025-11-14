@@ -41,12 +41,9 @@ public class EloPlugin extends JavaPlugin {
         pvpListener = new PvPListener(this);
         getServer().getPluginManager().registerEvents(pvpListener, this);
 
-        // Registrar comandos
+        // Registrar comando
         if (getCommand("elo") != null) {
             getCommand("elo").setExecutor(new EloCommand(this));
-        }
-        if (getCommand("topelo") != null) {
-            getCommand("topelo").setExecutor(new EloCommand(this));
         }
 
         getLogger().info("PrimeleagueElo habilitado");

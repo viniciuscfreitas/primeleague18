@@ -1,5 +1,6 @@
 package com.primeleague.payment;
 
+import com.primeleague.core.CoreAPI;
 import com.primeleague.payment.webhook.WebhookReceiver;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -9,7 +10,7 @@ import java.util.Date;
 
 /**
  * Plugin de pagamento - Primeleague
- * Grug Brain: Plugin simples, webhook receiver + task periódica
+ * Grug Brain: Plugin simples, webhook receiver + task periódica, depende do Core via CoreAPI
  */
 public class PaymentPlugin extends JavaPlugin {
 
@@ -21,7 +22,7 @@ public class PaymentPlugin extends JavaPlugin {
         instance = this;
 
         // Verificar se Core está habilitado
-        if (getServer().getPluginManager().getPlugin("PrimeleagueCore") == null) {
+        if (!CoreAPI.isEnabled()) {
             getLogger().severe("PrimeleagueCore não encontrado! Desabilitando plugin.");
             getServer().getPluginManager().disablePlugin(this);
             return;

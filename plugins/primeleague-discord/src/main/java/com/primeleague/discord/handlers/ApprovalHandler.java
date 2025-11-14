@@ -20,6 +20,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
+import java.util.Date;
 import java.util.UUID;
 
 /**
@@ -151,16 +152,16 @@ public class ApprovalHandler extends ListenerAdapter {
         MessageChannel channel = event.getChannel();
 
         // Log apenas para comandos (reduzir spam)
-        if (content.startsWith("/register ") || content.startsWith("/link ") || content.equals("/status")) {
+        if (content.startsWith("/registrar ")) {
             String channelInfo = channel.getType().name() + (channel.getName() != null ? ":" + channel.getName() : "");
-            plugin.getLogger().info("Comando Discord: " + content + " (Canal: " + channelInfo + ")");
+            plugin.getLogger().info("Comando Discord (texto): " + content + " (Canal: " + channelInfo + ")");
         }
 
-        // Comando /register <código> <minecraft_username>
-        if (content.startsWith("/register ")) {
-            String[] parts = content.substring(10).trim().split("\\s+", 2);
+        // Comando /registrar <código> <nome_minecraft> (PT-BR)
+        if (content.startsWith("/registrar ")) {
+            String[] parts = content.substring(11).trim().split("\\s+", 2);
             if (parts.length != 2) {
-                channel.sendMessage("❌ Uso: `/register <código> <minecraft_username>`").queue();
+                channel.sendMessage("❌ Uso: `/registrar <código> <nome_minecraft>`").queue();
                 return;
             }
 
@@ -168,146 +169,18 @@ public class ApprovalHandler extends ListenerAdapter {
             String minecraftName = parts[1].trim();
             long discordId = event.getAuthor().getIdLong();
 
-            new BukkitRunnable() {
+            // Processar registro (lógica reutilizável)
+            processRegistration(code, minecraftName, discordId, new MessageSender() {
                 @Override
-                public void run() {
-                    try {
-                        // Validar username (método utilitário inline)
-                        if (!isValidMinecraftUsername(minecraftName)) {
-                            channel.sendMessage("❌ Username inválido. Use 3-16 caracteres alfanuméricos (letras, números e _).").queue();
-                            return;
-                        }
-
-                        // Verificar se username já existe
-                        PlayerData existingByName = CoreAPI.getPlayerByName(minecraftName);
-                        if (existingByName != null) {
-                            channel.sendMessage("❌ Username já registrado. Use outro nome.").queue();
-                            return;
-                        }
-
-                        // Validar código via AuthPlugin (cast direto, sem reflexão)
-                        org.bukkit.plugin.Plugin authPlugin = plugin.getServer().getPluginManager().getPlugin("PrimeleagueAuth");
-                        if (authPlugin == null || !authPlugin.isEnabled()) {
-                            channel.sendMessage("❌ Sistema de autenticação não disponível. Tente novamente mais tarde.").queue();
-                            return;
-                        }
-
-                        CodeValidator codeValidator;
-                        if (!(authPlugin instanceof com.primeleague.auth.AuthPlugin)) {
-                            plugin.getLogger().warning("AuthPlugin não é instância correta. Verifique dependências.");
-                            channel.sendMessage("❌ Erro de configuração. Contate administrador.").queue();
-                            return;
-                        }
-                        codeValidator = ((com.primeleague.auth.AuthPlugin) authPlugin).getCodeValidator();
-
-                        // Validar se código é válido (está na lista de códigos permitidos)
-                        if (!codeValidator.isValid(code)) {
-                            channel.sendMessage("❌ Código inválido. Verifique e tente novamente.").queue();
-                            return;
-                        }
-
-                        // Validar se código já foi usado (cada código = pagamento = uso único)
-                        if (CoreAPI.isAccessCodeUsed(code)) {
-                            channel.sendMessage("❌ Este código já foi usado. Cada código só pode ser usado uma vez.").queue();
-                            return;
-                        }
-
-                        // Gerar UUID (sem IP ainda, será preenchido no primeiro login)
-                        UUID uuid = UUIDGenerator.generate(minecraftName, null);
-
-                        // Criar PlayerData sem IP (ip_hash = null)
-                        PlayerData data = new PlayerData(uuid, minecraftName, null);
-                        data.setAccessCode(code);
-                        data.setDiscordId(discordId);
-                        // access_expires_at será definido pelo payment plugin
-
-                        // Salvar conta
-                        CoreAPI.savePlayer(data);
-
-                        // Responder confirmação
-                        channel.sendMessage("✅ **Conta criada com sucesso!**\n\n" +
-                            "• Jogador: `" + minecraftName + "`\n" +
-                            "• Discord vinculado: `" + discordId + "`\n\n" +
-                            "Entre no servidor agora! O IP será registrado automaticamente no primeiro login.").queue();
-
-                        plugin.getLogger().info("Conta criada via Discord: " + minecraftName + " (Discord: " + discordId + ", UUID: " + uuid + ")");
-
-                    } catch (Exception e) {
-                        plugin.getLogger().severe("Erro ao processar registro via Discord: " + e.getMessage());
-                        e.printStackTrace();
-                        String errorMsg = "❌ Erro ao processar registro.";
-                        if (e.getMessage() != null && e.getMessage().contains("UNIQUE")) {
-                            errorMsg += " Username ou Discord já está em uso.";
-                        }
-                        channel.sendMessage(errorMsg).queue();
-                    }
+                public void send(String message) {
+                    channel.sendMessage(message).queue();
                 }
-            }.runTaskAsynchronously(plugin);
+            }, "Message Command");
             return;
         }
 
-        // Comando /link <minecraft_name>
-        if (content.startsWith("/link ")) {
-            String minecraftName = content.substring(6).trim();
-            long discordId = event.getAuthor().getIdLong();
-
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    try {
-                        PlayerData data = CoreAPI.getPlayerByName(minecraftName);
-                        if (data == null) {
-                            channel.sendMessage("❌ Conta Minecraft não encontrada: `" + minecraftName + "`").queue();
-                            return;
-                        }
-
-                        // Vincular Discord
-                        data.setDiscordId(discordId);
-                        CoreAPI.savePlayer(data);
-
-                        channel.sendMessage("✅ Conta vinculada com sucesso! Discord ID: `" + discordId + "`").queue();
-                    } catch (Exception e) {
-                        plugin.getLogger().severe("Erro ao vincular conta: " + e.getMessage());
-                        channel.sendMessage("❌ Erro ao vincular conta. Tente novamente.").queue();
-                    }
-                }
-            }.runTaskAsynchronously(plugin);
-        }
-
-        // Comando /status
-        if (content.equals("/status")) {
-            long discordId = event.getAuthor().getIdLong();
-
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    try {
-                        PlayerData data = CoreAPI.getPlayerByDiscordId(discordId);
-                        if (data == null) {
-                            channel.sendMessage("❌ Nenhuma conta Minecraft vinculada ao seu Discord.").queue();
-                            return;
-                        }
-
-                        StringBuilder status = new StringBuilder();
-                        status.append("📊 **Status da Conta**\n\n");
-                        status.append("• Jogador: `").append(data.getName()).append("`\n");
-                        status.append("• ELO: `").append(data.getElo()).append("`\n");
-                        status.append("• Money: `").append(data.getMoney()).append("`\n");
-
-                        if (data.getAccessExpiresAt() != null) {
-                            status.append("• Acesso expira em: `").append(data.getAccessExpiresAt()).append("`\n");
-                        } else {
-                            status.append("• Acesso: `Expirado`\n");
-                        }
-
-                        channel.sendMessage(status.toString()).queue();
-                    } catch (Exception e) {
-                        plugin.getLogger().severe("Erro ao buscar status: " + e.getMessage());
-                        channel.sendMessage("❌ Erro ao buscar status. Tente novamente.").queue();
-                    }
-                }
-            }.runTaskAsynchronously(plugin);
-        }
+        // Comando /vincular removido - inseguro (sem validação de propriedade)
+        // Use /registrar com código de acesso para criar/vincular contas de forma segura
     }
 
     /**
@@ -316,95 +189,190 @@ public class ApprovalHandler extends ListenerAdapter {
      */
     @Override
     public void onSlashCommand(SlashCommandEvent event) {
-        if (event.getName().equals("register")) {
+        String commandName = event.getName();
+        plugin.getLogger().info("Slash Command recebido: /" + commandName + " (User: " + event.getUser().getName() + ")");
+
+        // Handler para /status (deve vir ANTES de /registrar para evitar conflitos)
+        if (commandName.equals("status")) {
+            plugin.getLogger().info("Processando comando /status para user: " + event.getUser().getName());
+            event.deferReply(true).queue(); // Resposta privada
+            long discordId = event.getUser().getIdLong();
+            processStatus(discordId, new MessageSender() {
+                @Override
+                public void send(String message) {
+                    event.getHook().sendMessage(message).queue();
+                }
+            }, "Slash Command");
+            return; // IMPORTANTE: return para não processar outros comandos
+        }
+
+        // Handler para /registrar
+        if (commandName.equals("registrar")) {
             event.deferReply(true).queue(); // Resposta privada
 
             String code = event.getOption("codigo") != null ?
                 event.getOption("codigo").getAsString() : null;
-            String minecraftName = event.getOption("username") != null ?
-                event.getOption("username").getAsString() : null;
+            String minecraftName = event.getOption("usuario") != null ?
+                event.getOption("usuario").getAsString() : null;
             long discordId = event.getUser().getIdLong();
 
             if (code == null || minecraftName == null) {
-                event.getHook().sendMessage("❌ Uso: `/register codigo:<código> username:<minecraft_username>`").queue();
+                event.getHook().sendMessage("❌ Uso: `/registrar codigo:<código> usuario:<nome_minecraft>`").queue();
                 return;
             }
 
-            // Reutilizar lógica de registro (async)
-            new BukkitRunnable() {
+            // Processar registro (lógica reutilizável)
+            processRegistration(code, minecraftName, discordId, new MessageSender() {
                 @Override
-                public void run() {
-                    try {
-
-                        // Validar username
-                        if (!isValidMinecraftUsername(minecraftName)) {
-                            event.getHook().sendMessage("❌ Username inválido. Use 3-16 caracteres alfanuméricos (letras, números e _).").queue();
-                            return;
-                        }
-
-                        // Verificar se username já existe
-                        PlayerData existingByName = CoreAPI.getPlayerByName(minecraftName);
-                        if (existingByName != null) {
-                            event.getHook().sendMessage("❌ Username já registrado. Use outro nome.").queue();
-                            return;
-                        }
-
-                        // Validar código via AuthPlugin
-                        org.bukkit.plugin.Plugin authPlugin = plugin.getServer().getPluginManager().getPlugin("PrimeleagueAuth");
-                        if (authPlugin == null || !authPlugin.isEnabled()) {
-                            event.getHook().sendMessage("❌ Sistema de autenticação não disponível. Tente novamente mais tarde.").queue();
-                            return;
-                        }
-
-                        CodeValidator codeValidator;
-                        if (!(authPlugin instanceof com.primeleague.auth.AuthPlugin)) {
-                            plugin.getLogger().warning("AuthPlugin não é instância correta. Verifique dependências.");
-                            event.getHook().sendMessage("❌ Erro de configuração. Contate administrador.").queue();
-                            return;
-                        }
-                        codeValidator = ((com.primeleague.auth.AuthPlugin) authPlugin).getCodeValidator();
-
-                        // Validar se código é válido
-                        if (!codeValidator.isValid(code)) {
-                            event.getHook().sendMessage("❌ Código inválido. Verifique e tente novamente.").queue();
-                            return;
-                        }
-
-                        // Validar se código já foi usado
-                        if (CoreAPI.isAccessCodeUsed(code)) {
-                            event.getHook().sendMessage("❌ Este código já foi usado. Cada código só pode ser usado uma vez.").queue();
-                            return;
-                        }
-
-                        // Gerar UUID e criar conta
-                        UUID uuid = UUIDGenerator.generate(minecraftName, null);
-                        PlayerData data = new PlayerData(uuid, minecraftName, null);
-                        data.setAccessCode(code);
-                        data.setDiscordId(discordId);
-
-                        // Salvar conta
-                        CoreAPI.savePlayer(data);
-
-                        // Responder confirmação
-                        event.getHook().sendMessage("✅ **Conta criada com sucesso!**\n\n" +
-                            "• Jogador: `" + minecraftName + "`\n" +
-                            "• Discord vinculado: `" + discordId + "`\n\n" +
-                            "Entre no servidor agora! O IP será registrado automaticamente no primeiro login.").queue();
-
-                        plugin.getLogger().info("Conta criada via Discord Slash Command: " + minecraftName + " (Discord: " + discordId + ", UUID: " + uuid + ")");
-
-                    } catch (Exception e) {
-                        plugin.getLogger().severe("Erro ao processar registro via Slash Command: " + e.getMessage());
-                        e.printStackTrace();
-                        String errorMsg = "❌ Erro ao processar registro.";
-                        if (e.getMessage() != null && e.getMessage().contains("UNIQUE")) {
-                            errorMsg += " Username já está em uso.";
-                        }
-                        event.getHook().sendMessage(errorMsg).queue();
-                    }
+                public void send(String message) {
+                    event.getHook().sendMessage(message).queue();
                 }
-            }.runTaskAsynchronously(plugin);
+            }, "Slash Command");
+            return; // IMPORTANTE: return para não processar outros comandos
         }
+
+        // Comando desconhecido
+        plugin.getLogger().warning("Slash Command desconhecido: /" + commandName);
+        event.reply("❌ Comando desconhecido: /" + commandName).setEphemeral(true).queue();
+    }
+
+    /**
+     * Interface simples para enviar mensagens (MessageChannel ou InteractionHook)
+     * Grug Brain: Interface mínima, sem abstrações complexas
+     */
+    private interface MessageSender {
+        void send(String message);
+    }
+
+    /**
+     * Processa status de contas (lógica reutilizável)
+     * Grug Brain: Método único, sem duplicação, mostra todas as contas vinculadas
+     */
+    private void processStatus(long discordId, MessageSender responder, String source) {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                try {
+                    java.util.List<PlayerData> accounts = CoreAPI.getPlayersByDiscordId(discordId);
+                    if (accounts.isEmpty()) {
+                        responder.send("❌ Nenhuma conta Minecraft vinculada ao seu Discord.");
+                        return;
+                    }
+
+                    StringBuilder status = new StringBuilder();
+                    status.append("📊 **Status das Contas** (").append(accounts.size()).append(" conta").append(accounts.size() > 1 ? "s" : "").append(")\n\n");
+
+                    for (int i = 0; i < accounts.size(); i++) {
+                        PlayerData data = accounts.get(i);
+                        if (i > 0) {
+                            status.append("\n");
+                        }
+                        status.append("**").append(data.getName()).append("**\n");
+                        status.append("• ELO: `").append(data.getElo()).append("`\n");
+                        status.append("• Dinheiro: `").append(data.getMoney()).append("`\n");
+                        status.append("• Kills: `").append(data.getKills()).append("` | Deaths: `").append(data.getDeaths()).append("`\n");
+
+                        // Verificar se acesso está válido (não null e não expirado)
+                        Date now = new Date();
+                        if (data.getAccessExpiresAt() != null && data.getAccessExpiresAt().after(now)) {
+                            // Acesso válido - mostrar data de expiração
+                            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm");
+                            status.append("• Acesso válido até: `").append(sdf.format(data.getAccessExpiresAt())).append("`\n");
+                        } else {
+                            // Acesso expirado ou não definido
+                            status.append("• Acesso: `Expirado`\n");
+                        }
+                    }
+
+                    responder.send(status.toString());
+                } catch (Exception e) {
+                    plugin.getLogger().severe("Erro ao buscar status via " + source + ": " + e.getMessage());
+                    responder.send("❌ Erro ao buscar status. Tente novamente.");
+                }
+            }
+        }.runTaskAsynchronously(plugin);
+    }
+
+    /**
+     * Processa registro de conta (lógica reutilizável)
+     * Grug Brain: Método único, sem duplicação, aceita MessageSender para flexibilidade
+     */
+    private void processRegistration(String code, String minecraftName, long discordId,
+                                     MessageSender responder, String source) {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                try {
+                    // Validar nome
+                    if (!isValidMinecraftUsername(minecraftName)) {
+                        responder.send("❌ Nome inválido. Use 3-16 caracteres alfanuméricos (letras, números e _).");
+                        return;
+                    }
+
+                    // Verificar se nome já existe
+                    PlayerData existingByName = CoreAPI.getPlayerByName(minecraftName);
+                    if (existingByName != null) {
+                        responder.send("❌ Nome já registrado. Use outro nome.");
+                        return;
+                    }
+
+                    // Validar código via AuthPlugin
+                    org.bukkit.plugin.Plugin authPlugin = plugin.getServer().getPluginManager().getPlugin("PrimeleagueAuth");
+                    if (authPlugin == null || !authPlugin.isEnabled()) {
+                        responder.send("❌ Sistema de autenticação indisponível. Tente novamente mais tarde.");
+                        return;
+                    }
+
+                    CodeValidator codeValidator;
+                    if (!(authPlugin instanceof com.primeleague.auth.AuthPlugin)) {
+                        plugin.getLogger().warning("AuthPlugin não é instância correta. Verifique dependências.");
+                        responder.send("❌ Erro de configuração. Contate administrador.");
+                        return;
+                    }
+                    codeValidator = ((com.primeleague.auth.AuthPlugin) authPlugin).getCodeValidator();
+
+                    // Validar se código é válido
+                    if (!codeValidator.isValid(code)) {
+                        responder.send("❌ Código inválido. Verifique e tente novamente.");
+                        return;
+                    }
+
+                    // Validar se código já foi usado
+                    if (CoreAPI.isAccessCodeUsed(code)) {
+                        responder.send("❌ Este código já foi usado. Cada código só pode ser usado uma vez.");
+                        return;
+                    }
+
+                    // Gerar UUID e criar conta
+                    UUID uuid = UUIDGenerator.generate(minecraftName, null);
+                    PlayerData data = new PlayerData(uuid, minecraftName, null);
+                    data.setAccessCode(code);
+                    data.setDiscordId(discordId);
+                    // access_expires_at será definido pelo payment plugin
+
+                    // Salvar conta
+                    CoreAPI.savePlayer(data);
+
+                    // Responder confirmação (PT-BR)
+                    responder.send("✅ **Conta criada com sucesso!**\n\n" +
+                        "• Jogador: `" + minecraftName + "`\n" +
+                        "• Discord vinculado: `" + discordId + "`\n\n" +
+                        "Entre no servidor agora! O IP será registrado automaticamente no primeiro login.");
+
+                    plugin.getLogger().info("Conta criada via Discord " + source + ": " + minecraftName +
+                        " (Discord: " + discordId + ", UUID: " + uuid + ")");
+
+                } catch (Exception e) {
+                    plugin.getLogger().severe("Erro ao processar registro via " + source + ": " + e.getMessage());
+                    e.printStackTrace();
+                    String errorMsg = "❌ Erro ao processar registro.";
+                    if (e.getMessage() != null && e.getMessage().contains("UNIQUE")) {
+                        errorMsg += " Nome ou Discord já está em uso.";
+                    }
+                    responder.send(errorMsg);
+                }
+            }
+        }.runTaskAsynchronously(plugin);
     }
 
     /**

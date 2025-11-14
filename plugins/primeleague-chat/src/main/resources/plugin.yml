@@ -1,0 +1,44 @@
+name: PrimeleagueChat
+version: 1.0.0
+main: com.primeleague.chat.ChatPlugin
+api-version: 1.8
+author: Primeleague
+description: Chat plugin for Primeleague server - Formatação, Anti-spam, PMs, Logs
+depend: [PrimeleagueCore]
+softdepend: [PlaceholderAPI, PrimeleagueClans, PrimeleagueDiscord]
+
+commands:
+  msg:
+    description: Envia mensagem privada
+    usage: /msg <player> <mensagem>
+    aliases: [tell, w, whisper]
+  reply:
+    description: Responde última mensagem privada
+    usage: /reply <mensagem>
+    aliases: [r]
+  clearchat:
+    description: Limpa o chat (admin)
+    usage: /clearchat
+    permission: chat.admin
+
+permissions:
+  chat.*:
+    description: Todas as permissões de chat
+    default: false
+    children:
+      chat.msg: true
+      chat.admin: true
+      chat.socialspy: true
+
+  chat.msg:
+    description: Usar mensagens privadas
+    default: true
+
+  chat.admin:
+    description: Comandos admin de chat
+    default: op
+
+  chat.socialspy:
+    description: Ver PMs de outros players
+    default: op
+

@@ -1,11 +1,12 @@
 package com.primeleague.discord;
 
+import com.primeleague.core.CoreAPI;
 import com.primeleague.discord.bot.DiscordBot;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Plugin Discord Bot - Primeleague
- * Grug Brain: Plugin simples, depende do Core
+ * Grug Brain: Plugin simples, depende do Core via CoreAPI
  */
 public class DiscordPlugin extends JavaPlugin {
 
@@ -17,7 +18,7 @@ public class DiscordPlugin extends JavaPlugin {
         instance = this;
 
         // Verificar se Core está habilitado
-        if (getServer().getPluginManager().getPlugin("PrimeleagueCore") == null) {
+        if (!CoreAPI.isEnabled()) {
             getLogger().severe("PrimeleagueCore não encontrado! Desabilitando plugin.");
             getServer().getPluginManager().disablePlugin(this);
             return;

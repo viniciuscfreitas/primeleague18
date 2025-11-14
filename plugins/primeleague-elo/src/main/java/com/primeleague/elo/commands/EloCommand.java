@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Comandos de ELO - /elo e /topelo
+ * Comandos de ELO - /elo [player|top [page]]
  * Grug Brain: Queries diretas PostgreSQL, sem abstrações
  */
 public class EloCommand implements CommandExecutor {
@@ -31,15 +31,24 @@ public class EloCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        String cmdName = cmd.getName().toLowerCase();
-
-        if (cmdName.equals("elo")) {
-            return handleElo(sender, args);
-        } else if (cmdName.equals("topelo")) {
-            return handleTopElo(sender, args);
+        // Se primeiro argumento é "top", mostrar top ELO
+        if (args.length > 0 && args[0].equalsIgnoreCase("top")) {
+            // Extrair página se existir (args[1])
+            int page = 1;
+            if (args.length > 1) {
+                try {
+                    page = Integer.parseInt(args[1]);
+                    if (page < 1) page = 1;
+                } catch (NumberFormatException e) {
+                    sender.sendMessage(ChatColor.RED + "Página inválida: " + args[1]);
+                    return true;
+                }
+            }
+            return handleTopElo(sender, new String[]{String.valueOf(page)});
         }
 
-        return false;
+        // Caso contrário, mostrar ELO do player
+        return handleElo(sender, args);
     }
 
     /**
@@ -91,7 +100,7 @@ public class EloCommand implements CommandExecutor {
     }
 
     /**
-     * Comando /topelo [page] - Mostra top ELO
+     * Comando /elo top [page] - Mostra top ELO
      */
     private boolean handleTopElo(CommandSender sender, String[] args) {
         int page = 1;
@@ -140,7 +149,7 @@ public class EloCommand implements CommandExecutor {
                             return;
                         }
 
-                        // Construir mensagem
+                        // Construir mensagem (padronizado)
                         StringBuilder message = new StringBuilder();
                         message.append(ChatColor.GOLD).append("=== TOP ELO (Página ").append(finalPage).append(") ===\n");
 

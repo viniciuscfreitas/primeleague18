@@ -1,0 +1,96 @@
+name: PrimeleagueEconomy
+version: 1.0.0
+main: com.primeleague.economy.EconomyPlugin
+api-version: 1.8
+author: Primeleague
+description: Economia PvP Esports para servidor Primeleague
+depend: [PrimeleagueCore]
+softdepend: [Vault, PlaceholderAPI]
+
+commands:
+  dinheiro:
+    description: Mostra seu saldo
+    usage: /dinheiro [player]
+    aliases: [saldo, money, bal]
+
+  pagar:
+    description: Transfere dinheiro para outro jogador
+    usage: /pagar <player> <valor>
+    aliases: [pay]
+
+  ricostop:
+    description: Mostra ranking dos mais ricos
+    usage: /ricostop [página]
+    aliases: [baltop, topdinheiro]
+
+  eco:
+    description: Comandos admin de economia
+    usage: /eco <dar|remover|definir|reset> <player> <valor>
+    permission: economy.admin
+
+  loja:
+    description: Abre loja PvP
+    usage: /loja
+    aliases: [shop]
+
+  vender:
+    description: Vende items do inventário
+    usage: /vender <tudo|mão> [quantidade]
+    aliases: [sell]
+
+  leilao:
+    description: Sistema de leilões
+    usage: /leilao [vender|dar] [args]
+    aliases: [ah, auction]
+
+  recompensa:
+    description: Recompensa diária
+    usage: /recompensa
+    aliases: [reward, daily]
+
+  dynaprice:
+    description: Info de dynamic pricing
+    usage: /dynaprice [info|disable]
+    permission: economy.admin
+
+permissions:
+  economy.*:
+    description: Todas as permissões de economia
+    default: false
+    children:
+      economy.balance: true
+      economy.pagar: true
+      economy.shop: true
+      economy.vender: true
+      economy.leilao: true
+      economy.recompensa: true
+      economy.admin: true
+
+  economy.balance:
+    description: Ver saldo próprio e de outros
+    default: true
+
+  economy.pagar:
+    description: Transferir dinheiro
+    default: true
+
+  economy.shop:
+    description: Usar loja
+    default: true
+
+  economy.vender:
+    description: Vender items
+    default: true
+
+  economy.leilao:
+    description: Usar leilões
+    default: true
+
+  economy.recompensa:
+    description: Pegar recompensa diária
+    default: true
+
+  economy.admin:
+    description: Comandos admin (/eco)
+    default: op
+

@@ -1,5 +1,5 @@
 # Discord Bot Configuration
 discord:
-  bot-token: "YOUR_DISCORD_BOT_TOKEN_HERE"
+  bot-token: "your-token-here"
   guild-id: 0
 

@@ -1,0 +1,78 @@
+# Configuração PrimeleagueEconomy
+# Grug Brain: Config simples, valores diretos
+
+economy:
+  # Moeda
+  simbolo: "¢"
+
+  # Valores padrão
+  saldo-inicial: 10.00
+  saldo-minimo: 0
+  saldo-maximo: 1000000
+
+  # Actionbar saldo (opcional)
+  actionbar-saldo: false
+
+  # Recompensas PvP
+  recompensas:
+    kill-valor: 7.00
+    morte-valor: 0.00
+    killstreak-3-valor: 20.00
+    killstreak-5-valor: 50.00
+    killstreak-5-pot: true
+
+  # Recompensas Farms (DIRETO, não items)
+  farms:
+    mineracao:
+      ferro-valor: 0.50
+      diamante-valor: 2.00
+      cooldown-segundos: 30
+    mobs:
+      zumbi-valor: 1.00
+      skeleton-valor: 1.50
+      max-mobs-hora: 20
+    farming:
+      trigo-valor: 0.20
+      nether-wart-valor: 0.50
+
+  # Transferências
+  pagar-taxa-acima: 50.00
+  pagar-taxa-percentual: 0.03
+
+  # Vender (só loot PvP)
+  vender-multiplicador: 0.65
+  vender-blacklist:
+    - IRON_ORE
+    - DIAMOND_ORE
+    - GOLD_ORE
+    - COAL_ORE
+    - REDSTONE_ORE
+  vender-whitelist:
+    - POTION
+    - SPLASH_POTION
+    - GOLDEN_APPLE
+
+  # Dynamic Pricing (opcional)
+  precos-dinamicos:
+    habilitado: false
+    intervalo: 600
+    multiplicador-max: 1.5
+    multiplicador-min: 0.5
+
+# Cache
+cache:
+  ricostop-duracao: 300
+
+# Mensagens (PT-BR)
+mensagens:
+  saldo: "§bSeu saldo: §e{balance} {currency}"
+  saldo-outro: "§bSaldo de {player}: §e{balance} {currency}"
+  pagar-enviado: "§aVocê enviou §e{amount} {currency} §apara {player}"
+  pagar-recebido: "§aVocê recebeu §e{amount} {currency} §ade {sender}"
+  pagar-insuficiente: "§cSaldo insuficiente! Você tem {balance} {currency}"
+  kill-recompensa: "§a+{amount} {currency} §7(PvP Kill)"
+  killstreak-bonus: "§6+{amount} {currency} §7(Killstreak {killstreak})"
+  farm-recompensa: "§a+{amount} {currency} §7({farm_type})"
+  vender-sucesso: "§aVocê vendeu items por §e{amount} {currency}"
+  vender-item-blacklist: "§cEste item não pode ser vendido (já deu dinheiro direto)"
+

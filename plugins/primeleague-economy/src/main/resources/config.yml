@@ -1,0 +1,95 @@
+# Configuração PrimeleagueEconomy
+# Grug Brain: Config simples, valores diretos
+
+economy:
+  # Moeda
+  simbolo: "¢"
+
+  # Valores padrão
+  saldo-inicial: 10.00
+  saldo-minimo: 0
+  saldo-maximo: 1000000
+
+  # Actionbar saldo (opcional)
+  actionbar-saldo: false
+
+  # Recompensas PvP
+  recompensas:
+    kill-valor: 7.00
+    morte-valor: 0.00
+    killstreak-3-valor: 20.00
+    killstreak-5-valor: 50.00
+    killstreak-5-pot: true
+
+  # Recompensas Farms (DIRETO, não items)
+  farms:
+    mineracao:
+      ferro-valor: 0.50
+      diamante-valor: 2.00
+      cooldown-segundos: 30
+    mobs:
+      zumbi-valor: 1.00
+      skeleton-valor: 1.50
+      max-mobs-hora: 20
+    farming:
+      trigo-valor: 0.20
+      nether-wart-valor: 0.50
+
+  # Transferências
+  pagar-taxa-acima: 50.00
+  pagar-taxa-percentual: 0.03
+
+  # Vender (só loot PvP)
+  vender-multiplicador: 0.65
+  vender-blacklist:
+    - IRON_ORE
+    - DIAMOND_ORE
+    - GOLD_ORE
+    - COAL_ORE
+    - REDSTONE_ORE
+  vender-whitelist:
+    - POTION
+    - SPLASH_POTION
+    - GOLDEN_APPLE
+
+  # Dynamic Pricing (opcional)
+  precos-dinamicos:
+    habilitado: false  # Iniciar desabilitado para testes
+    intervalo: 600  # segundos (10 minutos)
+    janela-min: 600000  # ms (10 minutos para queries)
+    expected-injection: 100.0  # Expected total injection por 10min (tunar depois)
+    alpha: 0.3  # EMA smoothing factor (0.3 = reage em ~30min)
+    k-hyper: 0.5  # Sensibilidade hyperbolic (quanto mais alto, mais reativo)
+    max-change-cycle: 0.1  # Max 10% mudança por ciclo (anti-oscilação)
+    min-mult: 0.5  # Multiplicador mínimo (50% do base)
+    max-mult: 1.5  # Multiplicador máximo (150% do base)
+    players-min-update: 5  # Mínimo players online para atualizar (anti-vazio)
+
+  # Loja PvP - Preços base (usados quando dynamic pricing desabilitado ou como base)
+  shops:
+    pvp:
+      IRON_SWORD: 20.0
+      IRON_CHESTPLATE: 35.0
+      STRENGTH_POTION: 40.0
+      SPEED_POTION: 30.0
+      GOLDEN_APPLE: 15.0
+      ENDER_PEARL: 8.0
+      XP_BOTTLE: 12.0
+
+# Cache
+cache:
+  ricostop-duracao: 300
+
+# Mensagens (PT-BR)
+mensagens:
+  saldo: "§bSeu saldo: §e{balance} {currency}"
+  saldo-outro: "§bSaldo de {player}: §e{balance} {currency}"
+  pagar-enviado: "§aVocê enviou §e{amount} {currency} §apara {player}"
+  pagar-recebido: "§aVocê recebeu §e{amount} {currency} §ade {sender}"
+  pagar-insuficiente: "§cSaldo insuficiente! Você tem {balance} {currency}"
+  kill-recompensa: "§a+{amount} {currency} §7(PvP Kill)"
+  killstreak-bonus: "§6+{amount} {currency} §7(Killstreak {killstreak})"
+  farm-recompensa: "§a+{amount} {currency} §7({farm_type})"
+  vender-sucesso: "§aVocê vendeu items por §e{amount} {currency}"
+  vender-item-blacklist: "§cEste item não pode ser vendido (já deu dinheiro direto)"
+

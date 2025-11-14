@@ -5,8 +5,5 @@ api-version: 1.8
 author: Primeleague
 description: Authentication plugin for Primeleague server
 depend: [PrimeleagueCore]
-commands:
-  auth:
-    description: Processa código de acesso
-    usage: /auth <código>
+softdepend: [PrimeleagueDiscord]
 

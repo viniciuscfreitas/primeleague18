@@ -2,11 +2,12 @@ package com.primeleague.auth;
 
 import com.primeleague.auth.listeners.AuthListener;
 import com.primeleague.auth.utils.CodeValidator;
+import com.primeleague.core.CoreAPI;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Plugin de autenticação - Primeleague
- * Grug Brain: Plugin simples, depende do Core via PluginManager
+ * Grug Brain: Plugin simples, depende do Core via CoreAPI
  */
 public class AuthPlugin extends JavaPlugin {
 
@@ -19,7 +20,7 @@ public class AuthPlugin extends JavaPlugin {
         instance = this;
 
         // Verificar se Core está habilitado
-        if (getServer().getPluginManager().getPlugin("PrimeleagueCore") == null) {
+        if (!CoreAPI.isEnabled()) {
             getLogger().severe("PrimeleagueCore não encontrado! Desabilitando plugin.");
             getServer().getPluginManager().disablePlugin(this);
             return;
@@ -34,11 +35,6 @@ public class AuthPlugin extends JavaPlugin {
         // Registrar listener
         authListener = new AuthListener(this);
         getServer().getPluginManager().registerEvents(authListener, this);
-
-        // Registrar comando
-        if (getCommand("auth") != null) {
-            getCommand("auth").setExecutor(new com.primeleague.auth.commands.AuthCommand(this));
-        }
 
         getLogger().info("PrimeleagueAuth habilitado");
     }

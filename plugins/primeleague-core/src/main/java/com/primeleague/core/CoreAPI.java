@@ -5,6 +5,8 @@ import com.primeleague.core.models.PlayerData;
 import org.bukkit.Bukkit;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -85,6 +87,29 @@ public class CoreAPI {
             getPlugin().getLogger().severe("Erro ao buscar player por Discord ID: " + e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Busca todas as contas vinculadas a um Discord ID
+     * Grug Brain: Query simples, retorna lista
+     */
+    public static List<PlayerData> getPlayersByDiscordId(long discordId) {
+        List<PlayerData> players = new ArrayList<>();
+        try (Connection conn = getDatabase().getConnection()) {
+            PreparedStatement stmt = conn.prepareStatement(
+                "SELECT uuid, name, ip_hash, discord_id, access_code, access_expires_at, " +
+                "payment_status, money, elo, created_at, kills, deaths, killstreak, " +
+                "best_killstreak, last_kill_at, last_death_at, last_seen_at FROM users WHERE discord_id = ? ORDER BY name ASC");
+            stmt.setLong(1, discordId);
+
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                players.add(mapResultSetToPlayerData(rs));
+            }
+        } catch (SQLException e) {
+            getPlugin().getLogger().severe("Erro ao buscar players por Discord ID: " + e.getMessage());
+        }
+        return players;
     }
 
     /**

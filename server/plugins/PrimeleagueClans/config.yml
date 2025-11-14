@@ -1,0 +1,7 @@
+# Configuração do PrimeleagueClans
+# Grug Brain: Config simples, sem overengineering
+
+# Cache de rankings (em segundos)
+cache:
+  top-clans-duration: 300
+

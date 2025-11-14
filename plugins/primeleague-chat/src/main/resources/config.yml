@@ -1,0 +1,43 @@
+# Formatação de chat (usa PlaceholderAPI)
+# Nota: %message% será substituído por %2$s (placeholder padrão do AsyncPlayerChatEvent)
+format: "§8[%clans_tag%] §6%player_name% §7(§e%chat_elo% §7| §c%chat_kills%§7/§c%chat_deaths% §7| §aKDR: %chat_kdr%§7) §7» §f%2$s"
+
+# Anti-spam
+anti-spam:
+  cooldown: 2.0  # segundos entre mensagens
+  max-length: 256
+  duplicate-check: true  # bloquear mensagens repetidas (3x)
+
+# Filtros
+filters:
+  caps-limit: 70  # % de letras maiúsculas permitidas
+  swear-blacklist:
+    - "palavra1"
+    - "palavra2"
+  ads-blacklist:
+    - "ip:"
+    - "servidor"
+    - "discord.gg"
+
+# Clan chat (deixar ClansPlugin processar)
+clan-chat:
+  prefix: "!"  # Prefixo que ClansPlugin usa
+
+# Logs
+logs:
+  enabled: true
+  channel: "global"  # global/clan/pm/staff
+
+# Discord relay
+discord:
+  relay-enabled: false
+  channel-id: 0  # ID do canal Discord
+
+# Auto-broadcast (opcional)
+broadcast:
+  enabled: false
+  interval: 300  # segundos entre broadcasts
+  messages:
+    - "§eBem-vindo ao servidor Primeleague!"
+    - "§aUse /clan para criar ou gerenciar seu clan!"
+

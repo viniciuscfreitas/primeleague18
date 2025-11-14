@@ -7,10 +7,6 @@ description: ELO Rating System for Primeleague server
 depend: [PrimeleagueCore]
 commands:
   elo:
-    description: Mostra ELO do player
-    usage: /elo [player]
-  topelo:
-    description: Mostra top ELO
-    usage: /topelo [page]
-    aliases: [topelo]
+    description: Mostra ELO do player ou top ELO
+    usage: /elo [player|top [page]]
 
