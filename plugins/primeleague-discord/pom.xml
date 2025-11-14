@@ -93,6 +93,14 @@
             <version>1.0.0</version>
             <scope>provided</scope>
         </dependency>
+        <!-- PrimeleagueClans (optional - soft dependency) -->
+        <dependency>
+            <groupId>com.primeleague</groupId>
+            <artifactId>primeleague-clans</artifactId>
+            <version>1.0.0</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
         <dependency>
             <groupId>net.dv8tion</groupId>
             <artifactId>JDA</artifactId>

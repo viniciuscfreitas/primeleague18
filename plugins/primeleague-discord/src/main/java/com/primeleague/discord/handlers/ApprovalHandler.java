@@ -206,6 +206,28 @@ public class ApprovalHandler extends ListenerAdapter {
             return; // IMPORTANTE: return para não processar outros comandos
         }
 
+        // Handler para /clan info
+        if (commandName.equals("clan")) {
+            event.deferReply().queue(); // Resposta pública (não ephemeral)
+
+            String subcommand = event.getSubcommandName();
+            if (subcommand == null || !subcommand.equals("info")) {
+                event.getHook().sendMessage("❌ Uso: `/clan info <player>`").queue();
+                return;
+            }
+
+            String playerName = event.getOption("player") != null ?
+                event.getOption("player").getAsString() : null;
+            if (playerName == null) {
+                event.getHook().sendMessage("❌ Especifique um player").queue();
+                return;
+            }
+
+            // Processar async (seguir padrão existente)
+            processClanInfo(playerName, event.getHook());
+            return;
+        }
+
         // Handler para /registrar
         if (commandName.equals("registrar")) {
             event.deferReply(true).queue(); // Resposta privada
@@ -383,6 +405,97 @@ public class ApprovalHandler extends ListenerAdapter {
         if (username == null) return false;
         if (username.length() < 3 || username.length() > 16) return false;
         return username.matches("^[a-zA-Z0-9_]+$");
+    }
+
+    /**
+     * Processa comando /clan info (lógica reutilizável)
+     * Grug Brain: Método único, async, embed formatado
+     */
+    private void processClanInfo(String playerName, net.dv8tion.jda.api.interactions.InteractionHook hook) {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                try {
+                    // 1. Buscar player via CoreAPI
+                    PlayerData playerData = CoreAPI.getPlayerByName(playerName);
+                    if (playerData == null) {
+                        hook.sendMessage("❌ Player não encontrado: " + playerName).queue();
+                        return;
+                    }
+
+                    // 2. Verificar se ClansPlugin está habilitado
+                    org.bukkit.plugin.Plugin clansPlugin =
+                        plugin.getServer().getPluginManager().getPlugin("PrimeleagueClans");
+                    if (clansPlugin == null || !clansPlugin.isEnabled()) {
+                        hook.sendMessage("❌ Plugin de Clans não está habilitado.").queue();
+                        return;
+                    }
+
+                    // Verificar se é instância correta (evitar ClassCastException)
+                    if (!(clansPlugin instanceof com.primeleague.clans.ClansPlugin)) {
+                        plugin.getLogger().warning("Plugin PrimeleagueClans não é instância correta");
+                        hook.sendMessage("❌ Erro de configuração do plugin de Clans.").queue();
+                        return;
+                    }
+
+                    // 3. Buscar clan do player
+                    com.primeleague.clans.ClansPlugin cp =
+                        (com.primeleague.clans.ClansPlugin) clansPlugin;
+                    com.primeleague.clans.models.ClanData clan =
+                        cp.getClansManager().getClanByMember(playerData.getUuid());
+
+                    if (clan == null) {
+                        hook.sendMessage("❌ " + playerName + " não está em um clan.").queue();
+                        return;
+                    }
+
+                    // 4. Buscar membros do clan
+                    java.util.List<com.primeleague.clans.models.ClanMember> members =
+                        cp.getClansManager().getMembers(clan.getId());
+
+                    // 5. Formatar resposta (Grug Brain: texto formatado é mais seguro que embed)
+                    // JDA 4.4.0: InteractionHook.sendMessage() aceita String, embed pode não funcionar
+                    StringBuilder response = new StringBuilder();
+                    response.append("🏰 **Clan: ").append(clan.getName()).append("**\n");
+                    response.append("Tag: ").append(clan.getTag()).append("\n\n");
+                    response.append("**Membros:** ").append(members.size()).append("\n");
+                    response.append("**Líder:** ").append(getPlayerName(clan.getLeaderUuid())).append("\n");
+
+                    // Lista de membros (máximo 10 para não exceder limite do Discord)
+                    if (!members.isEmpty()) {
+                        response.append("\n**Membros do Clan:**\n");
+                        int count = 0;
+                        for (com.primeleague.clans.models.ClanMember member : members) {
+                            if (count >= 10) {
+                                response.append("... e mais ").append(members.size() - 10).append(" membros");
+                                break;
+                            }
+                            String role = member.getRole().equals("LEADER") ? "👑" :
+                                         member.getRole().equals("OFFICER") ? "⭐" : "•";
+                            response.append(role).append(" ").append(getPlayerName(member.getPlayerUuid())).append("\n");
+                            count++;
+                        }
+                    }
+
+                    // Enviar resposta (texto formatado - funciona sempre em JDA 4.4.0)
+                    hook.sendMessage(response.toString()).queue();
+
+                } catch (Exception e) {
+                    plugin.getLogger().severe("Erro ao processar /clan info: " + e.getMessage());
+                    e.printStackTrace();
+                    hook.sendMessage("❌ Erro ao buscar informações do clan.").queue();
+                }
+            }
+        }.runTaskAsynchronously(plugin);
+    }
+
+    /**
+     * Helper: Obtém nome do player via CoreAPI
+     * Grug Brain: Método utilitário simples
+     */
+    private String getPlayerName(UUID uuid) {
+        PlayerData data = CoreAPI.getPlayer(uuid);
+        return data != null ? data.getName() : "Desconhecido";
     }
 }
 

@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
+import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -51,12 +52,19 @@ public class DiscordBot {
                         new OptionData(OptionType.STRING, "codigo", "Seu código de acesso único", true),
                         new OptionData(OptionType.STRING, "usuario", "Seu nome de usuário do Minecraft (3-16 caracteres)", true)
                     ),
-                new CommandData("status", "Mostra status de todas as suas contas Minecraft vinculadas")
+                new CommandData("status", "Mostra status de todas as suas contas Minecraft vinculadas"),
+                new CommandData("clan", "Informações sobre clans")
+                    .addSubcommands(
+                        new SubcommandData("info", "Mostra informações do clan de um player")
+                            .addOptions(
+                                new OptionData(OptionType.STRING, "player", "Nome do player", true)
+                            )
+                    )
             );
             commands.queue(
                 (success) -> {
                     plugin.getLogger().info("Discord Bot conectado: " + jda.getSelfUser().getName());
-                    plugin.getLogger().info("✅ Slash Commands registrados com sucesso: /registrar, /status");
+                    plugin.getLogger().info("✅ Slash Commands registrados com sucesso: /registrar, /status, /clan");
                 },
                 (error) -> {
                     plugin.getLogger().severe("❌ Erro ao registrar Slash Commands: " + error.getMessage());
