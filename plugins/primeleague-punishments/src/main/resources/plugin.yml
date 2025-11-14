@@ -1,0 +1,63 @@
+name: PrimeleaguePunishments
+version: 1.0.0
+main: com.primeleague.punishments.PunishPlugin
+api-version: 1.8
+author: Primeleague
+description: Sistema de Punições para servidor Primeleague
+depend: [PrimeleagueCore]
+softdepend: [PrimeleagueChat, PrimeleagueClans, PrimeleagueDiscord]
+
+commands:
+  ban:
+    description: Bane um jogador
+    usage: /ban <player> [tempo] [reason]
+    permission: punish.ban
+    aliases: [b]
+  unban:
+    description: Remove ban de um jogador
+    usage: /unban <player>
+    permission: punish.unban
+  mute:
+    description: Muta um jogador
+    usage: /mute <player> [tempo] [reason]
+    permission: punish.mute
+  unmute:
+    description: Remove mute de um jogador
+    usage: /unmute <player>
+    permission: punish.unmute
+  warn:
+    description: Adverte um jogador
+    usage: /warn <player> [reason]
+    permission: punish.warn
+  kick:
+    description: Expulsa um jogador
+    usage: /kick <player> [reason]
+    permission: punish.kick
+  history:
+    description: Mostra histórico de punições de um jogador
+    usage: /history <player>
+    permission: punish.history
+
+permissions:
+  punish.ban:
+    description: Permite banir jogadores
+    default: op
+  punish.unban:
+    description: Permite remover ban de jogadores
+    default: op
+  punish.mute:
+    description: Permite mutar jogadores
+    default: op
+  punish.unmute:
+    description: Permite remover mute de jogadores
+    default: op
+  punish.warn:
+    description: Permite advertir jogadores
+    default: op
+  punish.kick:
+    description: Permite expulsar jogadores
+    default: op
+  punish.history:
+    description: Permite ver histórico de punições
+    default: op
+

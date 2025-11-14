@@ -1,0 +1,27 @@
+# Templates de punições
+templates:
+  hacking: "Uso de hacks detectado"
+  spam: "Spam excessivo"
+  toxicity: "Comportamento tóxico"
+
+# Auto-punish
+auto-punish:
+  spam:
+    enabled: false
+    threshold: 5  # Quantas vezes spam antes de auto-mute
+  ragequit:
+    enabled: false
+    mute-duration: 300  # 5min em segundos
+
+# Integrações
+integrations:
+  discord-notify: true
+  clans-alert: true
+
+# Cache
+cache-ttl: 60  # Segundos
+
+# Discord (canal de moderação)
+discord:
+  mod-channel-id: 0  # ID do canal Discord para notificações de punições
+
