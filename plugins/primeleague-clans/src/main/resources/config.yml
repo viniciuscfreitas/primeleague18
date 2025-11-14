@@ -1,0 +1,31 @@
+# Configuração do PrimeleagueClans
+# Grug Brain: Config simples, sem overengineering
+
+# Cache de rankings (em segundos)
+cache:
+  top-clans-duration: 300
+
+# Limite de membros por clan (0 = ilimitado)
+clan:
+  max-members: 0
+
+# Clan Chat
+clan-chat:
+  # Prefixo para mensagens de clan chat (ex: !mensagem envia apenas para membros do clan)
+  prefix: "!"
+
+# Sistema de Pontos de Eventos
+points:
+  default-award: 10  # Pontos padrão se não especificado no evento
+  events:  # Pontos por tipo de evento
+    pvp-weekly: 15
+    pvp-daily: 10
+    tournament: 50
+
+# Sistema de Alertas
+alerts:
+  points-removal-threshold: 3  # Número de alertas antes de remover pontos
+  points-removal-amount: 10  # Quantos pontos remover por threshold atingido
+  block-threshold: 10  # Número de alertas antes de bloquear clan de eventos
+  auto-notify-online: true  # Notificar membros online quando alerta é criado
+

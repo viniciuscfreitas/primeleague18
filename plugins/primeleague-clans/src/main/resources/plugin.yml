@@ -1,0 +1,15 @@
+name: PrimeleagueClans
+version: 1.0.0
+main: com.primeleague.clans.ClansPlugin
+api-version: 1.8
+author: Primeleague
+description: Sistema de Clans para servidor Primeleague
+depend: [PrimeleagueCore]
+softdepend: [PlaceholderAPI, PrimeleagueDiscord, PrimeleagueEconomy]
+
+commands:
+  clan:
+    description: Comandos de clans
+    usage: /clan <subcomando>
+    aliases: [clans, c]
+
