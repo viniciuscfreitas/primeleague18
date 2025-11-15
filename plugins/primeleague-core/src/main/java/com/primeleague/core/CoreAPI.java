@@ -204,6 +204,71 @@ public class CoreAPI {
         }
     }
 
+    /**
+     * Incremento atômico de kills e killstreak (evita race condition)
+     * Grug Brain: UPDATE direto no banco, thread-safe, query simples
+     * PostgreSQL: GREATEST usa o valor ANTES do incremento, então killstreak + 1 é correto
+     * @param uuid UUID do player
+     * @return PlayerData com stats atualizadas ou null se não encontrado
+     */
+    public static PlayerData incrementKillsAndKillstreak(UUID uuid) {
+        try (Connection conn = getDatabase().getConnection()) {
+            // Incremento atômico: kills = kills + 1, killstreak = killstreak + 1
+            // best_killstreak = maior entre valor atual e novo killstreak (killstreak + 1)
+            PreparedStatement stmt = conn.prepareStatement(
+                "UPDATE users SET " +
+                "kills = kills + 1, " +
+                "killstreak = killstreak + 1, " +
+                "best_killstreak = GREATEST(best_killstreak, killstreak + 1), " +
+                "last_kill_at = ? " +
+                "WHERE uuid = ?");
+            
+            stmt.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
+            stmt.setObject(2, uuid);
+            
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected > 0) {
+                // Retornar dados atualizados
+                return getPlayer(uuid);
+            }
+            return null;
+        } catch (SQLException e) {
+            getPlugin().getLogger().severe("Erro ao incrementar kills: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Incremento atômico de deaths e reset de killstreak (evita race condition)
+     * Grug Brain: UPDATE direto no banco, thread-safe
+     * @param uuid UUID do player
+     * @return PlayerData com stats atualizadas ou null se não encontrado
+     */
+    public static PlayerData incrementDeathsAndResetKillstreak(UUID uuid) {
+        try (Connection conn = getDatabase().getConnection()) {
+            // Incremento atômico: deaths = deaths + 1, killstreak = 0
+            PreparedStatement stmt = conn.prepareStatement(
+                "UPDATE users SET " +
+                "deaths = deaths + 1, " +
+                "killstreak = 0, " +
+                "last_death_at = ? " +
+                "WHERE uuid = ?");
+            
+            stmt.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
+            stmt.setObject(2, uuid);
+            
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected > 0) {
+                // Retornar dados atualizados
+                return getPlayer(uuid);
+            }
+            return null;
+        } catch (SQLException e) {
+            getPlugin().getLogger().severe("Erro ao incrementar deaths: " + e.getMessage());
+            return null;
+        }
+    }
+
     private static PlayerData mapResultSetToPlayerData(ResultSet rs) throws SQLException {
         PlayerData data = new PlayerData();
         data.setUuid((UUID) rs.getObject("uuid"));

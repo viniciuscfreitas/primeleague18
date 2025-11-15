@@ -1,0 +1,13 @@
+# TAB Groups Configuration
+# Prime League - Full PvP Server
+
+# Default settings for all groups
+_DEFAULT_:
+  tabprefix: ""
+  tagprefix: ""
+  customtabname: "%player%"
+  tabsuffix: ""
+  tagsuffix: ""
+
+# Per-world configurations (if needed)
+per-world: {}

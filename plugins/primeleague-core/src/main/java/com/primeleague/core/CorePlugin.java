@@ -1,6 +1,8 @@
 package com.primeleague.core;
 
 import com.primeleague.core.database.DatabaseManager;
+import com.primeleague.core.integrations.CorePlaceholderExpansion;
+import com.primeleague.core.listeners.DefaultMessagesListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -11,6 +13,7 @@ public class CorePlugin extends JavaPlugin {
 
     private static CorePlugin instance;
     private DatabaseManager databaseManager;
+    private CorePlaceholderExpansion placeholderExpansion;
 
     @Override
     public void onEnable() {
@@ -27,11 +30,26 @@ public class CorePlugin extends JavaPlugin {
             return;
         }
 
+        // Setup PlaceholderAPI (se disponível)
+        setupPlaceholderAPI();
+
+        // Registrar listener para desativar mensagens padrão
+        getServer().getPluginManager().registerEvents(new DefaultMessagesListener(this), this);
+
         getLogger().info("PrimeleagueCore habilitado - PostgreSQL conectado");
     }
 
     @Override
     public void onDisable() {
+        // Desregistrar PlaceholderAPI expansion
+        if (placeholderExpansion != null) {
+            try {
+                placeholderExpansion.unregister();
+            } catch (Exception e) {
+                // Ignorar erros ao desregistrar
+            }
+        }
+
         if (databaseManager != null) {
             databaseManager.close();
         }
@@ -45,6 +63,29 @@ public class CorePlugin extends JavaPlugin {
 
     public DatabaseManager getDatabaseManager() {
         return databaseManager;
+    }
+
+    /**
+     * Setup PlaceholderAPI integration
+     * Grug Brain: Método separado seguindo padrão dos outros plugins
+     */
+    private void setupPlaceholderAPI() {
+        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") == null) {
+            getLogger().info("PlaceholderAPI não encontrado - placeholders de Core não estarão disponíveis");
+            return;
+        }
+
+        try {
+            placeholderExpansion = new CorePlaceholderExpansion();
+            if (placeholderExpansion.register()) {
+                getLogger().info("PlaceholderAPI integration habilitada (%core_health%)");
+            } else {
+                getLogger().warning("Falha ao registrar PlaceholderAPI expansion");
+            }
+        } catch (Exception e) {
+            getLogger().warning("Erro ao configurar PlaceholderAPI: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
 

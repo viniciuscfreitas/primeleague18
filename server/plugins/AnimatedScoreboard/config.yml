@@ -1,0 +1,20 @@
+# 
+# What data storage should we use:
+# - YAML 	: stores the player data in human readable form in playerdata.yml
+# - SQLITE	: stores the player data in a local SQLite database called playerdata-sqlite.db
+worlds:
+  global:
+  - globalscoreboard
+  world:
+  - defaultscoreboard
+  world_the_end: endscoreboard
+  world_nether: netherscoreboard
+placeholderapi: true
+check_updates: true
+debug_mode: false
+enable-triggers: true
+player-storage: SQLITE
+force-legacy: false
+hex-in-placeholders: true
+permissions:
+  adminboard: animatedscoreboard.test

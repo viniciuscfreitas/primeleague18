@@ -111,7 +111,18 @@ public class StatsPlugin extends JavaPlugin {
             return;
         }
 
-        Scoreboard scoreboard = manager.getNewScoreboard();
+        // Grug Brain: Reutilizar scoreboard existente ou criar novo (1.8.8 API)
+        Scoreboard scoreboard = player.getScoreboard();
+        if (scoreboard == null || scoreboard == Bukkit.getScoreboardManager().getMainScoreboard()) {
+            scoreboard = manager.getNewScoreboard();
+        } else {
+            // Limpar objetivo antigo se existir (evitar memory leak em 1.8.8)
+            Objective oldObjective = scoreboard.getObjective("stats");
+            if (oldObjective != null) {
+                oldObjective.unregister();
+            }
+        }
+        
         Objective objective = scoreboard.registerNewObjective("stats", "dummy");
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
@@ -128,17 +139,37 @@ public class StatsPlugin extends JavaPlugin {
 
         List<Map.Entry<UUID, PlayerStats>> topPlayers = getTopPlayers(topMostrar, ordenarPor);
 
+        // Tamanho mínimo do ranking (garantir scoreboard não fique muito pequeno)
+        int tamanhoMinimo = getConfig().getInt("scoreboard.tamanho-minimo", 5);
+        int rankingSize = Math.max(topPlayers.size(), tamanhoMinimo);
+
+        // Grug Brain: Espaçamento visual - linhas vazias entre seções
+        int currentScore = rankingSize + 4; // Começar com espaço extra no topo
+
         // Site (linha fixa no topo)
         String site = getConfig().getString("scoreboard.site", "§7www.primeleague.com.br");
-        objective.getScore(site).setScore(topPlayers.size() + 2);
+        objective.getScore(site).setScore(currentScore);
+        currentScore--;
+
+        // Linha vazia para espaçamento (usar código de cor invisível para garantir unicidade)
+        String[] colorCodes = {"§0", "§1", "§2", "§3", "§4", "§5", "§6", "§7", "§8", "§9", "§a", "§b", "§c", "§d", "§e", "§f"};
+        String espacoColorCode = currentScore <= colorCodes.length ? colorCodes[currentScore - 1] : "";
+        objective.getScore(espacoColorCode + " ").setScore(currentScore);
+        currentScore--;
 
         // Separador
         String separador = getConfig().getString("scoreboard.separador", "§b§l=== RANKING ===");
-        objective.getScore(separador).setScore(topPlayers.size() + 1);
+        objective.getScore(separador).setScore(currentScore);
+        currentScore--;
 
         // Adicionar entradas do ranking (de cima para baixo)
         // Scoreboard precisa de linhas únicas, usar códigos de cor invisíveis
-        int score = topPlayers.size();
+        // Grug Brain: Score maior = aparece primeiro (topo), número do ranking separado
+        // Grug Brain: 1.8.8 tem limite de 28 chars por linha (não 16), então não precisa truncar na maioria dos casos
+        int rankingNum = 1; // Número do ranking (1, 2, 3...)
+        
+        // Códigos de cor invisíveis para linhas únicas (reutilizar array já criado acima)
+        
         for (Map.Entry<UUID, PlayerStats> entry : topPlayers) {
             UUID uuid = entry.getKey();
             PlayerStats stats = entry.getValue();
@@ -151,25 +182,50 @@ public class StatsPlugin extends JavaPlugin {
             String playerName = topPlayer.getName();
             double kdr = stats.getKDR();
 
-            // Formatar linha: #1 Nome (KDR)
+            // Formatar linha: #1 Nome (KDR) com espaçamento visual
+            // Grug Brain: 1.8.8 limite é 28 chars, formato atual cabe facilmente
             // Usar códigos de cor invisíveis para garantir linhas únicas
-            String[] colorCodes = {"§0", "§1", "§2", "§3", "§4", "§5", "§6", "§7", "§8", "§9"};
-            String colorCode = score <= 10 ? colorCodes[score - 1] : "";
+            String colorCode = currentScore <= colorCodes.length ? colorCodes[currentScore - 1] : "";
 
-            String linha = String.format("%s%s#%d %s%s %s(%.2f)",
-                colorCode, corNumero, score, corNome, playerName, corKdr, kdr);
+            // Formato com espaçamento: #1  Nome  (KDR)
+            String linha = String.format("%s%s#%d  %s%s  %s(%.2f)",
+                colorCode, corNumero, rankingNum, corNome, playerName, corKdr, kdr);
 
-            // Scoreboard em 1.8.8 tem limite de 16 chars por linha (sem contar códigos de cor)
-            // Códigos de cor não contam no limite, mas melhor truncar se muito longo
+            // Verificar apenas se excede 28 chars (limite real do 1.8.8)
+            // Grug Brain: Truncar apenas se realmente necessário (nomes muito longos)
             String linhaSemCor = ChatColor.stripColor(linha);
-            if (linhaSemCor.length() > 16) {
-                // Truncar mantendo códigos de cor no início
-                int maxChars = 16 - 3; // espaço para "..."
-                linha = linha.substring(0, Math.min(linha.length(), maxChars + (linha.length() - linhaSemCor.length()))) + "...";
+            if (linhaSemCor != null && linhaSemCor.length() > 28) {
+                // Truncar nome se necessário (mantendo formato)
+                int maxNomeLength = 28 - String.format("#%d  ", rankingNum).length() - String.format("  (%.2f)", kdr).length();
+                if (maxNomeLength > 0 && playerName.length() > maxNomeLength) {
+                    String nomeTruncado = playerName.substring(0, maxNomeLength - 2) + "..";
+                    linha = String.format("%s%s#%d  %s%s  %s(%.2f)",
+                        colorCode, corNumero, rankingNum, corNome, nomeTruncado, corKdr, kdr);
+                }
             }
 
-            objective.getScore(linha).setScore(score);
-            score--;
+            objective.getScore(linha).setScore(currentScore);
+            currentScore--;
+            rankingNum++;
+        }
+
+        // Preencher linhas vazias se ranking está vazio ou muito pequeno
+        // Grug Brain: Linhas vazias com códigos de cor únicos para manter tamanho mínimo
+        String mensagemVazio = getConfig().getString("scoreboard.mensagem-vazio", "§7Nenhum player ainda");
+        while (currentScore > 0) {
+            // Usar código de cor invisível único para cada linha vazia
+            String colorCode = currentScore <= colorCodes.length ? colorCodes[currentScore - 1] : "";
+            String linhaVazia = colorCode + mensagemVazio;
+            
+            // Verificar apenas se excede 28 chars (limite real do 1.8.8)
+            String linhaVaziaSemCor = ChatColor.stripColor(linhaVazia);
+            if (linhaVaziaSemCor != null && linhaVaziaSemCor.length() > 28) {
+                int maxChars = 28 - 2; // espaço para ".."
+                linhaVazia = linhaVazia.substring(0, Math.min(linhaVazia.length(), maxChars + (linhaVazia.length() - linhaVaziaSemCor.length()))) + "..";
+            }
+            
+            objective.getScore(linhaVazia).setScore(currentScore);
+            currentScore--;
         }
 
         // Aplicar scoreboard ao player

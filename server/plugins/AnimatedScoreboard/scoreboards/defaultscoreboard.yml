@@ -1,0 +1,79 @@
+scores:
+  hidden: true
+
+display:
+  title:
+    text:
+      - "&b&lPRIME &7&lLEAGUE"
+    random: false
+    interval: 40
+    
+  line-1:
+    text:
+      - "&8&m━━━━━━━━━━━━━━━━━━"
+    random: false
+    interval: 200
+    score: 15
+    
+  line-2:
+    text:
+      - "&7ELO: &e%elo_symbol% &b%chat_elo%"
+    random: false
+    interval: 40
+    score: 14
+    
+  line-3:
+    text:
+      - "&7KDR: &c%chat_kdr%"
+    random: false
+    interval: 40
+    score: 13
+    
+  line-4:
+    text:
+      - " "
+    random: false
+    interval: 200
+    score: 12
+    
+  line-5:
+    text:
+      - "%clans_tag%"
+    random: false
+    interval: 40
+    score: 11
+    
+  line-6:
+    text:
+      - " "
+    random: false
+    interval: 200
+    score: 10
+    
+  line-7:
+    text:
+      - "&7Saldo: &a%economy_balance%"
+    random: false
+    interval: 40
+    score: 9
+    
+  line-8:
+    text:
+      - " "
+    random: false
+    interval: 200
+    score: 8
+    
+  line-9:
+    text:
+      - "&7www.primeleague.com.br"
+    random: false
+    interval: 200
+    score: 7
+    
+  line-10:
+    text:
+      - "&8&m━━━━━━━━━━━━━━━━━━"
+    random: false
+    interval: 200
+    score: 6

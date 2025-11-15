@@ -24,3 +24,27 @@ messages:
   elo-event-survivor: "§a+{amount} ELO §7(Evento: Sobrevivente)"
   elo-clan-win: "§a+{amount} ELO §7(Clan: Vitória)"
 
+# Ranks de ELO para símbolos (usado em %elo_symbol%)
+# Ordem: do menor para o maior
+ranks:
+  ferro:
+    min: 0
+    max: 499
+    symbol: "§7●"  # Símbolo cinza
+  bronze:
+    min: 500
+    max: 999
+    symbol: "§e●"  # Símbolo amarelo
+  prata:
+    min: 1000
+    max: 1499
+    symbol: "§f●"  # Símbolo branco
+  ouro:
+    min: 1500
+    max: 1999
+    symbol: "§a●"  # Símbolo verde
+  diamante:
+    min: 2000
+    max: -1  # -1 = sem máximo (maior rank)
+    symbol: "§b●"  # Símbolo azul claro
+

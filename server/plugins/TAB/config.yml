@@ -1,0 +1,198 @@
+# TAB v5.3.2 Configuration for Prime League
+# Paper 1.8.8 - Full PvP Server
+
+# https://github.com/NEZNAMY/TAB/wiki/Feature-guide:-Header-&-Footer
+header-footer:
+  enabled: true
+  designs:
+    default:
+      header:
+        - "&8&m----------------------------------------"
+        - "&b&lPRIME &7&lLEAGUE &8&l| &7Full PvP"
+        - "&8&m----------------------------------------"
+        - "&7Online: &a%online% &7| &7Seu Ping: &a%ping%ms"
+        - "&7ELO: &e%chat_elo% &7| &7KDR: &c%chat_kdr%"
+        - "&7Clan: %clans_tag%"
+        - "&8&m----------------------------------------"
+      footer:
+        - "&8&m----------------------------------------"
+        - "&7Saldo: &a%economy_balance_formatted%"
+        - "&7Kills: &c%chat_kills% &7| &7Deaths: &c%chat_deaths%"
+        - "&7Killstreak: &e%chat_killstreak% &7| &7Melhor: &e%chat_best_killstreak%"
+        - "&8&m----------------------------------------"
+
+# https://github.com/NEZNAMY/TAB/wiki/Feature-guide:-Tablist-name-formatting
+tablist-name-formatting:
+  enabled: false
+  disable-condition: ""
+
+# https://github.com/NEZNAMY/TAB/wiki/Feature-guide:-Nametags
+scoreboard-teams:
+  enabled: false
+  enable-collision: true
+  invisible-nametags: false
+  sorting-types:
+    - "PLACEHOLDER_A_TO_Z:%player%"
+  case-sensitive-sorting: false
+  can-see-friendly-invisibles: false
+  disable-condition: ""
+
+# https://github.com/NEZNAMY/TAB/wiki/Feature-guide:-Playerlist-Objective
+playerlist-objective:
+  enabled: true
+  value: "%ping%"
+  fancy-value: "&7%ping%ms"
+  title: "TAB"
+  render-type: INTEGER
+  disable-condition: ""
+
+# https://github.com/NEZNAMY/TAB/wiki/Feature-guide:-Belowname
+# Using core_health - returns integer directly (no warnings)
+belowname-objective:
+  enabled: true
+  value: "%core_health%"
+  title: "&c❤"
+  fancy-value: ""
+  fancy-value-default: "0"
+  disable-condition: ""
+
+# https://github.com/NEZNAMY/TAB/wiki/Feature-guide:-Spectator-fix
+prevent-spectator-effect:
+  enabled: false
+
+# https://github.com/NEZNAMY/TAB/wiki/Feature-guide:-Bossbar
+bossbar:
+  enabled: false
+  toggle-command: /bossbar
+  remember-toggle-choice: false
+  hidden-by-default: false
+  bars: {}
+
+# https://github.com/NEZNAMY/TAB/wiki/Feature-guide:-Scoreboard
+# Disabled - using AnimatedScoreboard instead
+scoreboard:
+  enabled: false
+  toggle-command: /sb
+  remember-toggle-choice: false
+  hidden-by-default: false
+  use-numbers: true
+  static-number: 0
+  delay-on-join-milliseconds: 0
+  scoreboards: {}
+
+# https://github.com/NEZNAMY/TAB/wiki/Feature-guide:-Layout
+layout:
+  enabled: false
+  direction: COLUMNS
+  default-skin: mineskin:37e93c8e12cd426cb28fce31969e0674
+  enable-remaining-players-text: true
+  remaining-players-text: "... and %s more"
+  empty-slot-ping-value: 1000
+  layouts: {}
+
+# https://github.com/NEZNAMY/TAB/wiki/Feature-guide:-Ping-Spoof
+ping-spoof:
+  enabled: false
+  value: 0
+
+# https://github.com/NEZNAMY/TAB/wiki/Feature-guide:-Global-playerlist
+global-playerlist:
+  enabled: false
+  display-others-as-spectators: false
+  display-vanished-players-as-spectators: true
+  isolate-unlisted-servers: false
+  update-latency: false
+  spy-servers: []
+  server-groups: {}
+
+placeholders:
+  date-format: "dd/MM/yyyy"
+  time-format: "HH:mm:ss"
+  time-offset: 0
+  register-tab-expansion: false
+
+# https://github.com/NEZNAMY/TAB/wiki/Feature-guide:-Placeholder-output-replacements
+placeholder-output-replacements: {}
+
+# https://github.com/NEZNAMY/TAB/wiki/Feature-guide:-Conditional-placeholders
+conditions: {}
+
+placeholder-refresh-intervals:
+  default-refresh-interval: 500
+  "%core_health%": 100
+  "%player_ping%": 1000
+  "%chat_elo%": 1000
+  "%chat_kdr%": 1000
+  "%chat_kills%": 1000
+  "%chat_deaths%": 1000
+  "%chat_killstreak%": 1000
+  "%chat_best_killstreak%": 1000
+  "%clans_tag%": 1000
+  "%economy_balance_formatted%": 1000
+  "%online%": 1000
+
+# assigning groups by permission nodes instead of taking them from permission plugin
+assign-groups-by-permissions: false
+
+# if the option above is true, all groups are taken based on permissions and the one higher in this list is used as primary
+primary-group-finding-list:
+  - Owner
+  - Admin
+  - Mod
+  - Helper
+  - default
+
+# Refresh interval (in milliseconds) of permission checks
+permission-refresh-interval: 1000
+
+# Unlocks extra console messages
+debug: false
+
+# https://github.com/NEZNAMY/TAB/wiki/MySQL
+mysql:
+  enabled: false
+  host: 127.0.0.1
+  port: 3306
+  database: tab
+  username: user
+  password: password
+  useSSL: true
+
+# https://github.com/NEZNAMY/TAB/wiki/Feature-guide:-Multi-server-support
+proxy-support:
+  enabled: true
+  type: PLUGIN
+  plugin:
+    name: RedisBungee
+  redis:
+    url: 'redis://:password@localhost:6379/0'
+  rabbitmq:
+    exchange: 'plugin'
+    url: 'amqp://guest:guest@localhost:5672/%2F'
+
+components:
+  minimessage-support: true
+  disable-shadow-for-heads: true
+
+# Internal value, do not change this
+config-version: 2
+
+########################################################################
+# BUKKIT ONLY - THE FOLLOWING SECTION IS ONLY FOR BACKEND INSTALLATION #
+########################################################################
+
+# https://github.com/NEZNAMY/TAB/wiki/Feature-guide:-Per-world-playerlist
+per-world-playerlist:
+  enabled: false
+  allow-bypass-permission: false
+  ignore-effect-in-worlds: []
+  shared-playerlist-world-groups: {}
+
+compensate-for-packetevents-bug: false
+
+#####################################################################
+# PROXY ONLY - THE FOLLOWING SECTION IS ONLY FOR PROXY INSTALLATION #
+#####################################################################
+
+use-bukkit-permissions-manager: false
+use-online-uuid-in-tablist: true

@@ -1,6 +1,7 @@
 # Formatação de chat (usa PlaceholderAPI)
 # Nota: %message% será substituído por %2$s (placeholder padrão do AsyncPlayerChatEvent)
-format: "§8[%clans_tag%] §6%player_name% §7(§e%chat_elo% §7| §c%chat_kills%§7/§c%chat_deaths% §7| §aKDR: %chat_kdr%§7) §7» §f%2$s"
+# %elo_symbol% fornece símbolo baseado no ELO (configurado no primeleague-elo)
+format: "§7[%clans_tag%] %elo_symbol% §b%player_name% §7» §f%2$s"
 
 # Anti-spam
 anti-spam:

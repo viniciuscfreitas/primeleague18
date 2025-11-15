@@ -11,3 +11,10 @@ database:
   password: postgres
   pool-size: 10
 
+# Desativar mensagens padrão do servidor
+# Grug Brain: Controle centralizado de todas as mensagens padrão
+disable-messages:
+  death: true   # Desativa mensagens de morte (ex: "Bilau foi morto por vinisff")
+  join: true    # Desativa mensagens de entrada
+  quit: true    # Desativa mensagens de saída
+

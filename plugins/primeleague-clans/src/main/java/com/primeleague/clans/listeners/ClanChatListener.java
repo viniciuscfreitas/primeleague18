@@ -59,8 +59,9 @@ public class ClanChatListener implements Listener {
         // Cancelar evento original
         event.setCancelled(true);
 
-        // Formato: §7[§e{tag}§7] §b{player}: §7{message}
-        String formattedMessage = ChatColor.GRAY + "[" + ChatColor.YELLOW + clan.getTag() +
+        // Formato: §7[{tag}§r§7] §b{player}: §7{message}
+        // Reset de cor após tag para não propagar cores
+        String formattedMessage = ChatColor.GRAY + "[" + clan.getTag() + ChatColor.RESET +
             ChatColor.GRAY + "] " + ChatColor.AQUA + player.getName() +
             ChatColor.WHITE + ": " + ChatColor.GRAY + clanMessage;
 

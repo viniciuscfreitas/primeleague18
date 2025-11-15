@@ -88,6 +88,8 @@ public class ClanCommand implements CommandExecutor {
                 return handleStats(player, args);
             case "alertas":
                 return handleAlertas(player, args);
+            case "tag":
+                return handleTag(player, args);
             case "admin":
                 return handleAdmin(player, args);
             default:
@@ -1206,6 +1208,7 @@ public class ClanCommand implements CommandExecutor {
         player.sendMessage(ChatColor.YELLOW + "/clan transferir <player>" + ChatColor.WHITE + " - Transfere liderança " + ChatColor.GRAY + "(Leader)");
         player.sendMessage(ChatColor.YELLOW + "/clan home [definir]" + ChatColor.WHITE + " - Teleporta para home ou define home " + ChatColor.GRAY + "(Leader)");
         player.sendMessage(ChatColor.YELLOW + "/clan stats [TAG]" + ChatColor.WHITE + " - Mostra estatísticas do clan");
+        player.sendMessage(ChatColor.YELLOW + "/clan tag cor <cor1> [cor2] [cor3]" + ChatColor.WHITE + " - Altera cor da tag " + ChatColor.GRAY + "(Leader)");
     }
 
     /**
@@ -1366,8 +1369,9 @@ public class ClanCommand implements CommandExecutor {
      */
     private boolean handleAdminSet(Player player, String[] args) {
         if (args.length < 5) {
-            player.sendMessage(ChatColor.RED + "Uso: /clan admin set <clan> <campo> <valor>");
+            player.sendMessage(ChatColor.RED + "Uso: /clan admin set <TAG> <campo> <valor>");
             player.sendMessage(ChatColor.GRAY + "Campos: " + ChatColor.WHITE + "name, tag, leader");
+            player.sendMessage(ChatColor.GRAY + "Nota: Use a TAG do clan (ex: ABC) ao invés do nome");
             return true;
         }
 
@@ -1396,22 +1400,28 @@ public class ClanCommand implements CommandExecutor {
         }
         String clanName = nomeBuilder.toString().trim();
 
-        // Buscar clan
+        // Buscar clan por tag (primeiro tenta por tag, depois por nome)
         ClanData clan = null;
-        try (Connection conn = CoreAPI.getDatabase().getConnection();
-             PreparedStatement stmt = conn.prepareStatement(
-                "SELECT id FROM clans WHERE name = ?")) {
-            stmt.setString(1, clanName);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    int clanId = rs.getInt("id");
-                    clan = plugin.getClansManager().getClan(clanId);
+        String tagCleanSearch = ChatColor.stripColor(clanName).toUpperCase();
+        clan = plugin.getClansManager().getClanByTag(tagCleanSearch);
+        
+        // Se não encontrou por tag, tenta por nome
+        if (clan == null) {
+            try (Connection conn = CoreAPI.getDatabase().getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(
+                    "SELECT id FROM clans WHERE name = ?")) {
+                stmt.setString(1, clanName);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        int clanId = rs.getInt("id");
+                        clan = plugin.getClansManager().getClan(clanId);
+                    }
                 }
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Erro ao buscar clan: " + e.getMessage());
+                player.sendMessage(ChatColor.RED + "Erro ao buscar clan.");
+                return true;
             }
-        } catch (SQLException e) {
-            plugin.getLogger().severe("Erro ao buscar clan: " + e.getMessage());
-            player.sendMessage(ChatColor.RED + "Erro ao buscar clan.");
-            return true;
         }
 
         if (clan == null) {
@@ -1482,6 +1492,130 @@ public class ClanCommand implements CommandExecutor {
         } catch (SQLException e) {
             plugin.getLogger().severe("Erro ao atualizar clan: " + e.getMessage());
             player.sendMessage(ChatColor.RED + "Erro ao atualizar clan.");
+        }
+
+        return true;
+    }
+
+    /**
+     * /clan tag cor <cor1> [cor2] [cor3]
+     * Permite líder alterar cor da tag mantendo o texto
+     * Até 3 cores (1 por letra)
+     */
+    private boolean handleTag(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(ChatColor.RED + "Uso: /clan tag cor <cor1> [cor2] [cor3]");
+            player.sendMessage(ChatColor.GRAY + "Exemplo: /clan tag cor &a (aplica verde nas 3 letras)");
+            player.sendMessage(ChatColor.GRAY + "Exemplo: /clan tag cor &a &b (1ª letra verde, outras 2 azul claro)");
+            player.sendMessage(ChatColor.GRAY + "Exemplo: /clan tag cor &a &b &c (cada letra com sua cor)");
+            return true;
+        }
+
+        if (!args[1].equalsIgnoreCase("cor")) {
+            player.sendMessage(ChatColor.RED + "Uso: /clan tag cor <cor1> [cor2] [cor3]");
+            return true;
+        }
+
+        ClanData clan = plugin.getClansManager().getClanByMember(player.getUniqueId());
+        if (clan == null) {
+            player.sendMessage(ChatColor.RED + "Você não está em um clan.");
+            return true;
+        }
+
+        // Verificar se é líder
+        String role = plugin.getClansManager().getMemberRole(clan.getId(), player.getUniqueId());
+        if (!"LEADER".equals(role)) {
+            player.sendMessage(ChatColor.RED + "Apenas o líder pode alterar a cor da tag.");
+            return true;
+        }
+
+        // Pegar tag atual sem cores
+        String tagClean = clan.getTagClean();
+        if (tagClean == null || tagClean.length() != 3) {
+            player.sendMessage(ChatColor.RED + "Tag do clan inválida.");
+            return true;
+        }
+
+        // Coletar cores (até 3)
+        String[] cores = new String[3];
+        int coresCount = 0;
+        for (int i = 2; i < args.length && coresCount < 3; i++) {
+            String cor = args[i];
+            // Validar formato de cor (&x ou §x)
+            if (cor.length() == 2 && (cor.charAt(0) == '&' || cor.charAt(0) == '§')) {
+                // Validar se segundo caractere é válido (0-9, a-f, k-o, r)
+                char code = cor.charAt(1);
+                if ((code >= '0' && code <= '9') || (code >= 'a' && code <= 'f') || 
+                    (code >= 'k' && code <= 'o') || code == 'r') {
+                    cores[coresCount] = cor;
+                    coresCount++;
+                } else {
+                    player.sendMessage(ChatColor.RED + "Código de cor inválido: " + cor + ChatColor.GRAY + " (use &0-9, &a-f, &k-o, &r)");
+                    return true;
+                }
+            } else {
+                player.sendMessage(ChatColor.RED + "Cor inválida: " + cor + ChatColor.GRAY + " (use &x ou §x)");
+                return true;
+            }
+        }
+
+        if (coresCount == 0) {
+            player.sendMessage(ChatColor.RED + "Você deve fornecer pelo menos uma cor.");
+            return true;
+        }
+
+        // Construir nova tag com cores aplicadas
+        // Lógica: última cor sempre altera as próximas letras
+        // 1 cor: aplica nas 3 letras
+        // 2 cores: primeira cor na 1ª letra, segunda cor nas outras 2
+        // 3 cores: cada letra com sua cor
+        StringBuilder novaTag = new StringBuilder();
+        String ultimaCor = null;
+        
+        for (int i = 0; i < 3; i++) {
+            // Determinar qual cor usar para esta letra
+            String corParaLetra = null;
+            if (i < coresCount && cores[i] != null) {
+                // Tem cor específica para esta posição
+                corParaLetra = cores[i].replace('&', '§');
+                ultimaCor = corParaLetra; // Atualiza última cor
+            } else if (ultimaCor != null) {
+                // Usa última cor definida (propaga)
+                corParaLetra = ultimaCor;
+            }
+            
+            // Aplicar cor se houver
+            if (corParaLetra != null) {
+                novaTag.append(corParaLetra);
+            }
+            
+            // Adicionar letra
+            novaTag.append(tagClean.charAt(i));
+        }
+
+        String novaTagStr = novaTag.toString();
+        
+        // Validar tamanho
+        if (novaTagStr.length() > 20) {
+            player.sendMessage(ChatColor.RED + "Tag com cores muito longa (máximo 20 caracteres).");
+            return true;
+        }
+
+        // Atualizar no banco
+        try (Connection conn = CoreAPI.getDatabase().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                "UPDATE clans SET tag = ? WHERE id = ?")) {
+            stmt.setString(1, novaTagStr);
+            stmt.setInt(2, clan.getId());
+            stmt.executeUpdate();
+            
+            // Atualizar cache
+            clan.setTag(novaTagStr);
+            
+            player.sendMessage(ChatColor.GREEN + "Cor da tag atualizada para: " + ChatColor.YELLOW + novaTagStr);
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Erro ao atualizar cor da tag: " + e.getMessage());
+            player.sendMessage(ChatColor.RED + "Erro ao atualizar cor da tag.");
         }
 
         return true;

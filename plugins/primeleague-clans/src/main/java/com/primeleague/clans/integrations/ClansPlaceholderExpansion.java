@@ -66,9 +66,12 @@ public class ClansPlaceholderExpansion extends PlaceholderExpansion {
             return clan.getName();
         }
 
-        // %clans_tag% - Tag colorida do clan
+        // %clans_tag% - Tag colorida do clan (com reset de cor para não propagar)
         if (identifier.equals("tag")) {
-            return clan.getTag();
+            String tag = clan.getTag();
+            // Reset de cor + cor gray para o colchete de fechamento
+            // Formato do chat usa §7[%clans_tag%], então reset + §7 garante cor correta no ]
+            return tag + org.bukkit.ChatColor.RESET + org.bukkit.ChatColor.GRAY;
         }
 
         // %clans_elo% - ELO médio do clan (usa cache TTL 30s)

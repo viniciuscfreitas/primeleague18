@@ -95,39 +95,29 @@ public class CombatListener implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-                // UUID já está correto no PlayerLoginEvent - buscar diretamente por UUID
-                PlayerData victimData = CoreAPI.getPlayer(victim.getUniqueId());
+                // Grug Brain: Usar incremento atômico para evitar race condition
+                // Incrementar deaths e resetar killstreak da vítima (PvP confirmado)
+                PlayerData victimData = CoreAPI.incrementDeathsAndResetKillstreak(victim.getUniqueId());
                 if (victimData == null) {
                     plugin.getLogger().warning("Player " + victim.getName() + " não encontrado no banco (UUID: " + victim.getUniqueId() + ")");
                     return;
                 }
 
-                // Incrementar deaths e resetar killstreak (PvP confirmado)
-                victimData.setDeaths(victimData.getDeaths() + 1);
-                victimData.setKillstreak(0);
-                victimData.setLastDeathAt(new Date());
-
-                // Atualizar stats do killer (PvP confirmado)
-                // UUID já está correto no PlayerLoginEvent - buscar diretamente por UUID
-                PlayerData killerData = CoreAPI.getPlayer(finalKiller.getUniqueId());
+                // Atualizar stats do killer usando incremento atômico (PvP confirmado)
+                PlayerData killerData = CoreAPI.incrementKillsAndKillstreak(finalKiller.getUniqueId());
                 if (killerData != null) {
-                    // Incrementar kills e killstreak
-                    killerData.setKills(killerData.getKills() + 1);
-                    int newKillstreak = killerData.getKillstreak() + 1;
-                    killerData.setKillstreak(newKillstreak);
-
-                    // Atualizar best killstreak se necessário
-                    if (newKillstreak > killerData.getBestKillstreak()) {
-                        killerData.setBestKillstreak(newKillstreak);
+                    int newKillstreak = killerData.getKillstreak();
+                    int bestKillstreak = killerData.getBestKillstreak();
+                    
+                    // Verificar se é novo best killstreak (best_killstreak já foi atualizado no SQL)
+                    // Grug Brain: Se killstreak == best_killstreak, provavelmente é um novo recorde
+                    // (best_killstreak só é atualizado quando killstreak atual >= best_killstreak)
+                    if (newKillstreak == bestKillstreak && newKillstreak > 0) {
                         plugin.getLogger().info("NOVO BEST KILLSTREAK: " + finalKiller.getName() + " - " + newKillstreak + " kills!");
                     }
 
-                    killerData.setLastKillAt(new Date());
-
-                    // Salvar killer
-                    CoreAPI.savePlayer(killerData);
                     plugin.getLogger().info("Stats atualizadas: " + finalKiller.getName() +
-                        " (Kills: " + killerData.getKills() + ", Killstreak: " + newKillstreak + ")");
+                        " (Kills: " + killerData.getKills() + ", Killstreak: " + newKillstreak + ", Best: " + bestKillstreak + ")");
 
                     // Preparar mensagens (não enviar aqui - thread async)
                     final String killMsg = plugin.getConfig().getString("messages.kill", "")
@@ -159,8 +149,6 @@ public class CombatListener implements Listener {
                     }.runTask(plugin);
                 }
 
-                // Salvar vítima
-                CoreAPI.savePlayer(victimData);
                 plugin.getLogger().info("Stats atualizadas: " + victim.getName() +
                     " (Deaths: " + victimData.getDeaths() + ", Killstreak resetado)");
 

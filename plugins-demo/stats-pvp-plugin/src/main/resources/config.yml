@@ -14,6 +14,8 @@ scoreboard:
   cor-numero: "§b"    # Cyan para números
   cor-nome: "§b"      # Cyan para nomes
   cor-kdr: "§7"       # Cinza para KDR
+  tamanho-minimo: 5   # Tamanho mínimo do ranking (evita scoreboard muito pequeno quando vazio)
+  mensagem-vazio: "§7Nenhum player ainda"  # Mensagem exibida quando não há players no ranking
 
 # Chat
 chat:

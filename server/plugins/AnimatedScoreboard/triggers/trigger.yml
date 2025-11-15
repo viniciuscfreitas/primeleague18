@@ -1,0 +1,17 @@
+#The event that will trigger this scoreboard with full package name and classname
+event: org.bukkit.event.player.PlayerJoinEvent
+
+#It will look for this method when getting the player to target, so if the player method is getPlayer() you put getPlayer
+#You are able to find the method in the javadoc of that plugin, most of them will just use getPlayer as method
+target-player: getPlayer
+
+#This is the scoreboard that will be displayed when the trigger is called
+trigger-scoreboard: joinscoreboard
+
+#For how long will the triggered scoreboard be displayed in ticks. 20 being 1 second
+stay-time: 200
+
+#If the event is trigger more than once during the stay time should it reset the entire scoreboard:
+# true will reset the entire scoreboard (starting from frame 0 again)
+# false will just reset the timer 
+reset-on-trigger: false

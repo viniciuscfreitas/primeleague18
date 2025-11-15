@@ -1,0 +1,20 @@
+# 
+# Placeholders disponíveis do Prime League:
+# 
+# Chat Plugin (%chat_*):
+#   %chat_elo% - ELO do jogador
+#   %chat_kills% - Kills do jogador
+#   %chat_deaths% - Deaths do jogador
+#   %chat_kdr% - KDR (Kills/Deaths)
+#   %chat_killstreak% - Killstreak atual
+#   %chat_best_killstreak% - Melhor killstreak
+scoreboard:
+  names:
+    adminboard: adminboard
+    endscoreboard: endscoreboard
+    globalscoreboard: globalscoreboard
+    netherscoreboard: netherscoreboard
+    defaultscoreboard: defaultscoreboard
+  disabled: '&cDisabled'
+  enabled: '&aEnabled'
+  none-active: '&7None'

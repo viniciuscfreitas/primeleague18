@@ -1,0 +1,10 @@
+# TAB Bossbar Configuration
+# Prime League - Full PvP Server
+# Bossbar is disabled, but file is required for TAB v5.3.2
+
+enabled: false
+toggle-command: /bossbar
+remember-toggle-choice: false
+hidden-by-default: false
+bars: {}
+

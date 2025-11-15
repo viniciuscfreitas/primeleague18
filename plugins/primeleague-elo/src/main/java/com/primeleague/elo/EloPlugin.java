@@ -2,6 +2,7 @@ package com.primeleague.elo;
 
 import com.primeleague.core.CoreAPI;
 import com.primeleague.elo.commands.EloCommand;
+import com.primeleague.elo.integrations.EloPlaceholderExpansion;
 import com.primeleague.elo.listeners.PvPListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -16,6 +17,7 @@ public class EloPlugin extends JavaPlugin {
 
     private static EloPlugin instance;
     private PvPListener pvpListener;
+    private EloPlaceholderExpansion placeholderExpansion;
     private Map<String, TopCache> topCache;
     private long topCacheDuration;
 
@@ -46,11 +48,23 @@ public class EloPlugin extends JavaPlugin {
             getCommand("elo").setExecutor(new EloCommand(this));
         }
 
+        // Setup PlaceholderAPI (se disponível)
+        setupPlaceholderAPI();
+
         getLogger().info("PrimeleagueElo habilitado");
     }
 
     @Override
     public void onDisable() {
+        // Desregistrar PlaceholderAPI expansion
+        if (placeholderExpansion != null) {
+            try {
+                placeholderExpansion.unregister();
+            } catch (Exception e) {
+                // Ignorar erros ao desregistrar
+            }
+        }
+
         if (topCache != null) {
             topCache.clear();
         }
@@ -63,6 +77,37 @@ public class EloPlugin extends JavaPlugin {
 
     public PvPListener getPvPListener() {
         return pvpListener;
+    }
+
+    /**
+     * Setup PlaceholderAPI integration
+     */
+    private void setupPlaceholderAPI() {
+        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") == null) {
+            getLogger().info("PlaceholderAPI não encontrado - placeholders de ELO não estarão disponíveis");
+            return;
+        }
+
+        try {
+            placeholderExpansion = new EloPlaceholderExpansion(this);
+            if (placeholderExpansion.register()) {
+                getLogger().info("PlaceholderAPI integration habilitada (%elo_symbol%, %elo_value%)");
+            } else {
+                getLogger().warning("Falha ao registrar PlaceholderAPI expansion");
+            }
+        } catch (Exception e) {
+            getLogger().warning("Erro ao configurar PlaceholderAPI: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Recarrega ranges de ELO (útil para reload)
+     */
+    public void reloadRanks() {
+        if (placeholderExpansion != null) {
+            placeholderExpansion.reload();
+        }
     }
 
     /**
