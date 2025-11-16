@@ -1,0 +1,95 @@
+# Queue Settings
+queue:
+  # Tempo máximo na queue antes de remover (em segundos)
+  timeout: 300
+  # Range inicial de ELO para matchmaking ranked (±100)
+  elo-range-initial: 100
+  # Incremento de range se não encontrar match
+  elo-range-increment: 50
+  # Range máximo de ELO para matchmaking
+  elo-range-max: 500
+  # Máximo de matches processados por tick (melhora performance com muitos players)
+  max-matches-per-tick: 3
+
+# Match Settings
+match:
+  # Tempo de countdown antes de iniciar (em segundos)
+  countdown: 5
+  # Tempo máximo de match (em segundos, 0 = ilimitado)
+  max-duration: 600
+  # Cancelar match se player desconectar
+  cancel-on-disconnect: true
+  # Penalizar ELO se desconectar durante match ranked
+  penalize-disconnect: false
+  # Broadcast mensagem quando match termina
+  broadcast-on-end: true
+
+# Kits
+kits:
+  # Kit padrão se não especificado
+  default: "nodebuff"
+  # Kits disponíveis (serão carregados do banco)
+  available: []
+
+# Arenas
+arenas:
+  # Reset automático de arenas após match (requer WorldEdit ou implementação manual)
+  auto-reset: false
+  # Tempo para reset automático (em segundos)
+  reset-delay: 10
+
+# Bots (Fase 5 - Opcional)
+bots:
+  enabled: false
+  # Dificuldades disponíveis
+  difficulties:
+    - EASY
+    - MEDIUM
+    - HARD
+
+# Cache
+cache:
+  # Duração do cache de top rankings (em segundos)
+  top-duration: 300
+  # Duração do cache de stats (em segundos)
+  stats-duration: 300
+
+# Integrations
+integrations:
+  # Discord webhooks
+  discord:
+    enabled: true
+    # ID do canal para enviar webhooks (opcional)
+    webhook-channel-id: ""
+  # PlaceholderAPI
+  placeholderapi:
+    enabled: true
+
+# Mensagens (PT-BR)
+messages:
+  queue:
+    joined: "§aVocê entrou na queue para {kit} ({mode})"
+    left: "§cVocê saiu da queue"
+    match-found: "§aMatch encontrado! Preparando arena..."
+    timeout: "§cVocê foi removido da queue por timeout"
+  match:
+    starting: "§aMatch iniciando em {countdown} segundos!"
+    started: "§aMatch iniciado! Boa sorte!"
+    ended: "§a{winner} venceu o match contra {loser}!"
+    cancelled: "§cMatch cancelado"
+    disconnect: "§c{player} desconectou. Match cancelado."
+  duel:
+    challenge-sent: "§aDesafio enviado para {player}"
+    challenge-received: "§a{player} te desafiou! Use /duel accept ou /duel deny"
+    accepted: "§a{player} aceitou seu desafio!"
+    denied: "§c{player} negou seu desafio"
+    not-found: "§cPlayer não encontrado ou offline"
+  elo:
+    change: "§7ELO: {change} §7({elo})"
+  error:
+    already-in-queue: "§cVocê já está na queue"
+    already-in-match: "§cVocê já está em um match"
+    no-arena: "§cNenhuma arena disponível no momento"
+    invalid-kit: "§cKit inválido: {kit}"
+    permission: "§cVocê não tem permissão para isso"
+

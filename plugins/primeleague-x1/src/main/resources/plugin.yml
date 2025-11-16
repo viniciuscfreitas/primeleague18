@@ -1,0 +1,12 @@
+name: PrimeleagueX1
+version: 1.0.0
+main: com.primeleague.x1.X1Plugin
+author: Primeleague
+description: Plugin de duelos X1 para o servidor Primeleague
+depend: [PrimeleagueCore]
+softdepend: [PrimeleagueElo, PrimeleagueDiscord, PlaceholderAPI]
+commands:
+  x1:
+    description: Comando principal do sistema de duels x1
+    usage: /x1 [fila|sair|estatisticas|top|duelo|aceitar|negar|admin|espectar]
+

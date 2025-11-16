@@ -1,0 +1,114 @@
+# Configurações de Fila
+queue:
+  # Tempo máximo na fila antes de remover (em segundos)
+  timeout: 300
+  # Alcance inicial de ELO para ranqueado (±100)
+  elo-range-initial: 100
+  # Incremento do alcance se não encontrar partida
+  elo-range-increment: 50
+  # Alcance máximo de ELO para matchmaking
+  elo-range-max: 500
+  # Máximo de partidas processadas por tick (melhora performance)
+  max-matches-per-tick: 3
+# Configurações de Partida
+match:
+  # Tempo de contagem antes de iniciar (em segundos)
+  countdown: 5
+  # Tempo máximo de partida (em segundos, 0 = ilimitado)
+  max-duration: 600
+  # Cancelar partida se jogador desconectar
+  cancel-on-disconnect: true
+  # Penalizar ELO se desconectar durante partida ranqueada
+  penalize-disconnect: false
+  # Enviar broadcast quando a partida termina
+  broadcast-on-end: true
+
+# Kits
+kits:
+  # Kit padrão se não especificado
+  default: "nodebuff"
+  # Kits disponíveis (serão carregados do banco)
+  available: []
+
+# Arenas
+arenas:
+  # Reset automático de arenas após partida (requer WorldEdit ou implementação manual)
+  auto-reset: false
+  # Tempo para reset automático (em segundos)
+  reset-delay: 10
+
+# Bots (Fase 5 - Opcional)
+bots:
+  enabled: false
+  # Dificuldades disponíveis
+  difficulties:
+    - EASY
+    - MEDIUM
+    - HARD
+
+# Cache
+cache:
+  # Duração do cache de top rankings (em segundos)
+  top-duration: 300
+  # Duração do cache de stats (em segundos)
+  stats-duration: 300
+
+# Integrations
+integrations:
+  # Discord webhooks
+  discord:
+    enabled: true
+    # ID do canal para enviar webhooks (opcional)
+    webhook-channel-id: ""
+  # PlaceholderAPI
+  placeholderapi:
+    enabled: true
+
+# UX Settings
+ux:
+  # Títulos durante countdown
+  countdown-titles: true
+  # Som ao encontrar match
+  match-found-sound: true
+  # Som ao vencer
+  victory-sound: true
+  # Som ao perder
+  defeat-sound: true
+  # Mostrar posição na queue
+  show-queue-position: true
+  # Mostrar tempo de match
+  show-match-time: true
+  # Branding
+  branding:
+    nome: "PRIME LEAGUE"
+    cor: "§b"
+    mostrar-em-titulos: true
+
+# Mensagens (PT-BR)
+messages:
+  queue:
+    joined: "§aVocê entrou na fila para {kit} ({mode})"
+    left: "§cVocê saiu da fila"
+    match-found: "§aPartida encontrada! Preparando arena..."
+    timeout: "§cVocê foi removido da fila por tempo excedido"
+  match:
+    starting: "§aPartida iniciando em {countdown} segundos!"
+    started: "§aPartida iniciada! Boa sorte!"
+    ended: "§a{winner} venceu a partida contra {loser}!"
+    cancelled: "§cPartida cancelada"
+    disconnect: "§c{player} desconectou. Partida cancelada."
+  duel:
+    challenge-sent: "§aDesafio enviado para {player}"
+    challenge-received: "§a{player} te desafiou! Use /x1 aceitar ou /x1 negar"
+    accepted: "§a{player} aceitou seu desafio!"
+    denied: "§c{player} negou seu desafio"
+    not-found: "§cJogador não encontrado ou offline"
+  elo:
+    change: "§7ELO: {change} §7({elo})"
+  error:
+    already-in-queue: "§cVocê já está na fila"
+    already-in-match: "§cVocê já está em uma partida"
+    no-arena: "§cNenhuma arena disponível no momento"
+    invalid-kit: "§cKit inválido: {kit}"
+    permission: "§cVocê não tem permissão para isso"
+
