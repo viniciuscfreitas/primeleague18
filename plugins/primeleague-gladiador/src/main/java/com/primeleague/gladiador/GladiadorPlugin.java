@@ -76,6 +76,13 @@ public class GladiadorPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MatchListener(this), this);
         getServer().getPluginManager().registerEvents(new ProtectionListener(this), this);
 
+        // Limpar cache de rate limiting do Discord periodicamente (a cada 5 minutos)
+        if (discordIntegration != null && discordIntegration.isDiscordEnabled()) {
+            getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
+                discordIntegration.cleanRateLimitCache();
+            }, 6000L, 6000L); // A cada 5 minutos (6000 ticks)
+        }
+
         // Registrar PlaceholderAPI (softdepend - comentado até PlaceholderAPI estar disponível no classpath)
         // TODO: Implementar via reflection quando PlaceholderAPI estiver disponível
         // if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
