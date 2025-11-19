@@ -8,6 +8,7 @@ import com.primeleague.gladiador.GladiadorPlugin;
 import com.primeleague.gladiador.models.Arena;
 import com.primeleague.gladiador.models.ClanEntry;
 import com.primeleague.gladiador.models.GladiadorMatch;
+import com.primeleague.league.LeagueAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
@@ -133,6 +134,26 @@ public class MatchManager {
         }
 
         return true;
+    }
+
+    /**
+     * Obtém spawn de saída configurado
+     * Grug Brain: Retorna spawn do config ou world spawn como fallback
+     */
+    private Location getExitSpawn() {
+        String world = plugin.getConfig().getString("spawn.exit-world");
+        if (world == null) return null;
+        
+        org.bukkit.World w = Bukkit.getWorld(world);
+        if (w == null) return null;
+        
+        double x = plugin.getConfig().getDouble("spawn.exit-x");
+        double y = plugin.getConfig().getDouble("spawn.exit-y");
+        double z = plugin.getConfig().getDouble("spawn.exit-z");
+        float yaw = (float) plugin.getConfig().getDouble("spawn.exit-yaw", 0);
+        float pitch = (float) plugin.getConfig().getDouble("spawn.exit-pitch", 0);
+        
+        return new Location(w, x, y, z, yaw, pitch);
     }
 
     /**
@@ -335,7 +356,12 @@ public class MatchManager {
 
         // Teleportar para spawn (fora da arena) - apenas se player estiver online
         if (victim.isOnline()) {
-            victim.teleport(victim.getWorld().getSpawnLocation()); // TODO: Configurar spawn de saída
+            Location exitSpawn = getExitSpawn();
+            if (exitSpawn != null) {
+                victim.teleport(exitSpawn);
+            } else {
+                victim.teleport(victim.getWorld().getSpawnLocation());
+            }
             restoreInventory(victim);
         }
 
@@ -504,11 +530,30 @@ public class MatchManager {
         plugin.getStatsManager().incrementWins(winner.getClanId());
         plugin.getStatsManager().incrementParticipation(winner.getClanId());
 
+        // NOVO: Registrar vitórias via LeagueAPI (todos os clans com posições e pontos F1)
+        if (LeagueAPI.isEnabled()) {
+            // Ordenar clans por ordem de eliminação (invertido: vencedor = 1º lugar)
+            List<ClanEntry> rankedClans = getRankedClans();
+            for (int i = 0; i < rankedClans.size(); i++) {
+                ClanEntry clan = rankedClans.get(i);
+                int position = i + 1;
+
+                // Registrar vitória via LeagueAPI (com posição, kills, deaths)
+                LeagueAPI.recordGladiadorWin(clan.getClanId(), currentMatch.getMatchId(), position,
+                    clan.getKills(), clan.getDeaths());
+            }
+        }
+
         // Teleportar vencedores e restaurar inv
         for (UUID uuid : winner.getRemainingPlayers()) {
             Player p = Bukkit.getPlayer(uuid);
             if (p != null) {
-                p.teleport(p.getWorld().getSpawnLocation());
+                Location exitSpawn = getExitSpawn();
+                if (exitSpawn != null) {
+                    p.teleport(exitSpawn);
+                } else {
+                    p.teleport(p.getWorld().getSpawnLocation());
+                }
                 restoreInventory(p);
                 p.sendMessage(ChatColor.GOLD + "Parabéns pela vitória!");
             }
@@ -557,7 +602,12 @@ public class MatchManager {
             for (UUID uuid : entry.getMembers()) { // Todos os membros, não apenas vivos
                 Player p = Bukkit.getPlayer(uuid);
                 if (p != null && p.isOnline()) {
-                    p.teleport(p.getWorld().getSpawnLocation());
+                    Location exitSpawn = getExitSpawn();
+                    if (exitSpawn != null) {
+                        p.teleport(exitSpawn);
+                    } else {
+                        p.teleport(p.getWorld().getSpawnLocation());
+                    }
                     restoreInventory(p);
                 }
             }
@@ -625,6 +675,51 @@ public class MatchManager {
                 }
             }
         }.runTaskLater(plugin, retriesLeft < 3 ? 10L : 0L); // Delay de 10 ticks em retries
+    }
+
+    /**
+     * Obtém clans ordenados por posição (1º = último eliminado/vencedor)
+     * Grug Brain: Ordena por ordem de eliminação invertida
+     * Vencedor = posição 1, depois ordena por kills (mais kills = melhor posição)
+     */
+    private List<ClanEntry> getRankedClans() {
+        if (currentMatch == null) {
+            return new ArrayList<>();
+        }
+
+        // Ordenar por ordem de eliminação (invertido)
+        // Vencedor = último eliminado = posição 1
+        List<ClanEntry> ranked = new ArrayList<>(currentMatch.getClanEntries());
+
+        // Identificar vencedor (clan não eliminado)
+        ClanEntry winner = null;
+        for (ClanEntry entry : ranked) {
+            if (!entry.isEliminated()) {
+                winner = entry;
+                break;
+            }
+        }
+
+        // Ordenar: vencedor primeiro, depois por kills (mais kills = melhor posição)
+        final ClanEntry finalWinner = winner;
+        ranked.sort((a, b) -> {
+            // Vencedor sempre primeiro
+            if (finalWinner != null) {
+                if (a.getClanId() == finalWinner.getClanId()) return -1;
+                if (b.getClanId() == finalWinner.getClanId()) return 1;
+            }
+
+            // Depois ordenar por kills (mais kills = melhor posição)
+            int killDiff = Integer.compare(b.getKills(), a.getKills());
+            if (killDiff != 0) {
+                return killDiff;
+            }
+
+            // Se kills iguais, ordenar por menos deaths (melhor KDR)
+            return Integer.compare(a.getDeaths(), b.getDeaths());
+        });
+
+        return ranked;
     }
 
     /**

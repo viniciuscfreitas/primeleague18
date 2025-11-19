@@ -97,10 +97,6 @@ public class X1PlaceholderExpansion extends PlaceholderExpansion {
                     return "§7"; // Cinza - baixo
                 }
             
-            case "queue_size":
-                // Tamanho total da queue
-                return String.valueOf(plugin.getQueueManager().getQueueSize("total"));
-            
             case "queue_position":
                 // Posição na queue (0 se não estiver)
                 int position = plugin.getQueueManager().getQueuePosition(uuid);
@@ -153,6 +149,65 @@ public class X1PlaceholderExpansion extends PlaceholderExpansion {
                     return "";
                 }
                 return change > 0 ? "+" + change : String.valueOf(change);
+            
+            case "queue_mode":
+            case "queue_kit":
+            case "queue_size":
+                // Informações da queue
+                String playerQueueKey = plugin.getQueueManager().getPlayerQueueKey(uuid);
+                if (playerQueueKey == null) {
+                    // Se não está na queue, retornar vazio ou tamanho total
+                    if (lowerId.equals("queue_size")) {
+                        return String.valueOf(plugin.getQueueManager().getQueueSize("total"));
+                    }
+                    return "";
+                }
+                int queueUnderscoreIndex = playerQueueKey.lastIndexOf('_');
+                if (queueUnderscoreIndex <= 0) {
+                    return "";
+                }
+                String queueKit = playerQueueKey.substring(0, queueUnderscoreIndex);
+                String queueMode = playerQueueKey.substring(queueUnderscoreIndex + 1);
+                
+                if (lowerId.equals("queue_mode")) {
+                    return queueMode.equals("ranked") ? "Ranked" : "Unranked";
+                } else if (lowerId.equals("queue_kit")) {
+                    return queueKit;
+                } else if (lowerId.equals("queue_size")) {
+                    return String.valueOf(plugin.getQueueManager().getQueueSize(playerQueueKey));
+                }
+                return "";
+            
+            case "match_kit":
+            case "match_mode":
+            case "match_arena":
+            case "opponent_elo":
+                // Informações do match
+                com.primeleague.x1.models.Match matchInfo = plugin.getMatchManager().getMatch(uuid);
+                if (matchInfo == null) {
+                    return "";
+                }
+                
+                if (lowerId.equals("match_kit")) {
+                    return matchInfo.getKit();
+                } else if (lowerId.equals("match_mode")) {
+                    return matchInfo.isRanked() ? "Ranked" : "Unranked";
+                } else if (lowerId.equals("match_arena")) {
+                    return matchInfo.getArena() != null ? matchInfo.getArena().getName() : "Desconhecida";
+                } else if (lowerId.equals("opponent_elo")) {
+                    UUID opponentUuid = matchInfo.getPlayer1().equals(uuid) ? 
+                        matchInfo.getPlayer2() : matchInfo.getPlayer1();
+                    try {
+                        if (com.primeleague.elo.EloAPI.isEnabled()) {
+                            int opponentElo = com.primeleague.elo.EloAPI.getElo(opponentUuid);
+                            return String.valueOf(opponentElo);
+                        }
+                    } catch (Exception e) {
+                        // EloAPI não disponível
+                    }
+                    return "?";
+                }
+                return "";
             
             default:
                 return null; // Placeholder desconhecido

@@ -74,6 +74,9 @@ public class GladiadorCommand implements CommandExecutor, TabCompleter {
             case "spectator":
                 handleSpectator(player);
                 break;
+            case "setexitspawn":
+                handleSetExitSpawn(player);
+                break;
             case "help":
             case "ajuda":
                 handleHelp(player);
@@ -134,6 +137,7 @@ public class GladiadorCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(ChatColor.YELLOW + "/gladiador cancelar - Cancela evento ativo");
             player.sendMessage(ChatColor.YELLOW + "/gladiador setarena <nome> - Cria arena");
             player.sendMessage(ChatColor.YELLOW + "/gladiador setspawn <arena> - Define spawn");
+            player.sendMessage(ChatColor.YELLOW + "/gladiador setexitspawn - Define spawn de saída");
             player.sendMessage(ChatColor.YELLOW + "/gladiador spectator - Entra em modo spectator");
         }
     }
@@ -220,12 +224,31 @@ public class GladiadorCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(ChatColor.GREEN + "Modo spectator ativado!");
     }
 
+    private void handleSetExitSpawn(Player player) {
+        if (!player.hasPermission("primeleague.admin")) {
+            player.sendMessage(ChatColor.RED + "Sem permissão.");
+            return;
+        }
+        
+        Location loc = player.getLocation();
+        plugin.getConfig().set("spawn.exit-world", loc.getWorld().getName());
+        plugin.getConfig().set("spawn.exit-x", loc.getX());
+        plugin.getConfig().set("spawn.exit-y", loc.getY());
+        plugin.getConfig().set("spawn.exit-z", loc.getZ());
+        plugin.getConfig().set("spawn.exit-yaw", (double) loc.getYaw());
+        plugin.getConfig().set("spawn.exit-pitch", (double) loc.getPitch());
+        plugin.saveConfig();
+        
+        player.sendMessage(ChatColor.GREEN + "Spawn de saída configurado!");
+        player.sendMessage(ChatColor.GRAY + "Jogadores eliminados serão teleportados para esta localização.");
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             List<String> completions = new ArrayList<>();
             if (sender.hasPermission("primeleague.admin")) {
-                completions.addAll(Arrays.asList("iniciar", "cancelar", "setarena", "setspawn", "spectator"));
+                completions.addAll(Arrays.asList("iniciar", "cancelar", "setarena", "setspawn", "setexitspawn", "spectator"));
             }
             return completions;
         }

@@ -1,6 +1,7 @@
 package com.primeleague.economy;
 
 import com.primeleague.core.CoreAPI;
+import com.primeleague.league.LeagueAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -54,6 +55,11 @@ public class EconomyAPI {
         // Log transação async (não bloquear thread)
         logTransactionAsync(playerUuid, null, cents, reason != null ? reason : "ADD", "");
 
+        // NOVO: Registrar transação via LeagueAPI
+        if (LeagueAPI.isEnabled()) {
+            LeagueAPI.recordMoneyTransaction(playerUuid, cents, "ADD", reason != null ? reason : "Add Money");
+        }
+
         // Logging reduzido (apenas se configurado)
         if (getPlugin().getConfig().getBoolean("economy.log-transacoes", false)) {
             double newBalance = manager.getBalance(playerUuid);
@@ -94,6 +100,11 @@ public class EconomyAPI {
 
         // Log transação async (não bloquear thread)
         logTransactionAsync(playerUuid, null, -cents, reason != null ? reason : "REMOVE", "");
+
+        // NOVO: Registrar transação via LeagueAPI
+        if (LeagueAPI.isEnabled()) {
+            LeagueAPI.recordMoneyTransaction(playerUuid, -cents, "REMOVE", reason != null ? reason : "Remove Money");
+        }
 
         return amount;
     }

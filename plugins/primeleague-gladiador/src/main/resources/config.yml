@@ -1,6 +1,15 @@
 # Configuração Gladiador
 # Grug Brain: Config simples, direto ao ponto
 
+# Spawn Settings
+spawn:
+  exit-world: "world"      # Mundo do spawn de saída
+  exit-x: 0.5
+  exit-y: 64.0
+  exit-z: 0.5
+  exit-yaw: 0.0
+  exit-pitch: 0.0
+
 # Arena Settings (VALORES DE TESTE - BAIXOS)
 arena:
   preparation-time: 30         # 30 segundos para teste (normal: 300)

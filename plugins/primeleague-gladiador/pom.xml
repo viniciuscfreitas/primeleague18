@@ -121,6 +121,16 @@
             <systemPath>${project.basedir}/../primeleague-economy/target/primeleague-economy-1.0.0.jar</systemPath>
         </dependency>
 
+        <!-- PrimeleagueLeague (softdepend - system scope for compile) -->
+        <dependency>
+            <groupId>com.primeleague</groupId>
+            <artifactId>primeleague-league</artifactId>
+            <version>1.0.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../primeleague-league/target/primeleague-league-1.0.0.jar</systemPath>
+            <optional>true</optional>
+        </dependency>
+
         <!-- JSON Simple (para parsing JSONB do PostgreSQL) -->
         <dependency>
             <groupId>com.googlecode.json-simple</groupId>

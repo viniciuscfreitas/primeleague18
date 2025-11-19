@@ -2,6 +2,7 @@ package com.primeleague.stats.listeners;
 
 import com.primeleague.core.CoreAPI;
 import com.primeleague.core.models.PlayerData;
+import com.primeleague.league.LeagueAPI;
 import com.primeleague.stats.StatsPlugin;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -103,12 +104,18 @@ public class CombatListener implements Listener {
                     return;
                 }
 
+                // NOVO: Registrar kill via LeagueAPI (única fonte da verdade)
+                if (LeagueAPI.isEnabled()) {
+                    String weapon = "unknown"; // TODO: Detectar arma do evento
+                    LeagueAPI.recordKill(finalKiller.getUniqueId(), victim.getUniqueId(), weapon);
+                }
+
                 // Atualizar stats do killer usando incremento atômico (PvP confirmado)
                 PlayerData killerData = CoreAPI.incrementKillsAndKillstreak(finalKiller.getUniqueId());
                 if (killerData != null) {
                     int newKillstreak = killerData.getKillstreak();
                     int bestKillstreak = killerData.getBestKillstreak();
-                    
+
                     // Verificar se é novo best killstreak (best_killstreak já foi atualizado no SQL)
                     // Grug Brain: Se killstreak == best_killstreak, provavelmente é um novo recorde
                     // (best_killstreak só é atualizado quando killstreak atual >= best_killstreak)

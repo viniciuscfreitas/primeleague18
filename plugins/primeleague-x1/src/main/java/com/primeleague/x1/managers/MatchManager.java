@@ -2,6 +2,7 @@ package com.primeleague.x1.managers;
 
 import com.primeleague.core.CoreAPI;
 import com.primeleague.elo.EloAPI;
+import com.primeleague.league.LeagueAPI;
 import com.primeleague.x1.X1Plugin;
 import com.primeleague.x1.models.Arena;
 import com.primeleague.x1.models.Kit;
@@ -56,7 +57,7 @@ public class MatchManager {
                 // Notificar players
                 org.bukkit.entity.Player p1 = org.bukkit.Bukkit.getPlayer(entry1.getPlayerUuid());
                 org.bukkit.entity.Player p2 = org.bukkit.Bukkit.getPlayer(entry2.getPlayerUuid());
-                String msg = plugin.getConfig().getString("messages.error.no-arena", 
+                String msg = plugin.getConfig().getString("messages.error.no-arena",
                     "§cNenhuma arena disponível no momento. Tente novamente em instantes.");
                 if (p1 != null) p1.sendMessage(msg);
                 if (p2 != null) p2.sendMessage(msg);
@@ -73,7 +74,7 @@ public class MatchManager {
                 // Notificar players
                 org.bukkit.entity.Player p1 = org.bukkit.Bukkit.getPlayer(entry1.getPlayerUuid());
                 org.bukkit.entity.Player p2 = org.bukkit.Bukkit.getPlayer(entry2.getPlayerUuid());
-                String msg = plugin.getConfig().getString("messages.error.invalid-kit", 
+                String msg = plugin.getConfig().getString("messages.error.invalid-kit",
                     "§cErro ao criar kit: {kit}").replace("{kit}", entry1.getKit());
                 if (p1 != null) p1.sendMessage(msg);
                 if (p2 != null) p2.sendMessage(msg);
@@ -82,9 +83,9 @@ public class MatchManager {
         }
 
         // Criar match
-        Match match = new Match(entry1.getPlayerUuid(), entry2.getPlayerUuid(), 
+        Match match = new Match(entry1.getPlayerUuid(), entry2.getPlayerUuid(),
             entry1.getKit(), arena, entry1.isRanked());
-        
+
         // Adicionar aos matches ativos
         activeMatches.put(entry1.getPlayerUuid(), match);
         activeMatches.put(entry2.getPlayerUuid(), match);
@@ -95,11 +96,17 @@ public class MatchManager {
         // Obter players uma vez e reutilizar
         Player p1 = Bukkit.getPlayer(entry1.getPlayerUuid());
         Player p2 = Bukkit.getPlayer(entry2.getPlayerUuid());
-        
+
         // Atualizar TAB prefix (se disponível)
         if (plugin.getTabIntegration() != null && plugin.getTabIntegration().isEnabled()) {
             if (p1 != null) plugin.getTabIntegration().updateMatchPrefix(p1);
             if (p2 != null) plugin.getTabIntegration().updateMatchPrefix(p2);
+        }
+
+        // Atualizar scoreboard contextual (se disponível)
+        if (plugin.getScoreboardIntegration() != null && plugin.getScoreboardIntegration().isEnabled()) {
+            if (p1 != null) plugin.getScoreboardIntegration().updateScoreboard(p1);
+            if (p2 != null) plugin.getScoreboardIntegration().updateScoreboard(p2);
         }
 
         // Feedback ao encontrar match
@@ -107,21 +114,21 @@ public class MatchManager {
         String brandingNome = plugin.getConfig().getString("ux.branding.nome", "PRIME LEAGUE");
         String brandingCor = plugin.getConfig().getString("ux.branding.cor", "§b");
         boolean mostrarBranding = plugin.getConfig().getBoolean("ux.branding.mostrar-em-titulos", true);
-        
+
         if (p1 != null && p1.isOnline()) {
             String opponentName = p2 != null ? p2.getName() : "Oponente";
                 try {
-                String title = mostrarBranding ? 
-                    brandingCor + "§l" + brandingNome : 
+                String title = mostrarBranding ?
+                    brandingCor + "§l" + brandingNome :
                     "§a§lPARTIDA ENCONTRADA!";
                 String subtitle = "§7Oponente: §e" + opponentName;
                 TitleCompat.send(p1, title, subtitle);
             } catch (Exception e) {
                 // Fallback
-                p1.sendMessage(plugin.getConfig().getString("messages.queue.match-found", 
+                p1.sendMessage(plugin.getConfig().getString("messages.queue.match-found",
                     "§aPartida encontrada! Preparando arena..."));
             }
-            
+
             if (matchFoundSound) {
                 try {
                     p1.playSound(p1.getLocation(), org.bukkit.Sound.LEVEL_UP, 1.0f, 1.2f);
@@ -135,21 +142,21 @@ public class MatchManager {
                 }
             }
         }
-        
+
         if (p2 != null && p2.isOnline()) {
             String opponentName = p1 != null ? p1.getName() : "Oponente";
                 try {
-                String title = mostrarBranding ? 
-                    brandingCor + "§l" + brandingNome : 
+                String title = mostrarBranding ?
+                    brandingCor + "§l" + brandingNome :
                     "§a§lPARTIDA ENCONTRADA!";
                 String subtitle = "§7Oponente: §e" + opponentName;
                 TitleCompat.send(p2, title, subtitle);
             } catch (Exception e) {
                 // Fallback
-                p2.sendMessage(plugin.getConfig().getString("messages.queue.match-found", 
+                p2.sendMessage(plugin.getConfig().getString("messages.queue.match-found",
                     "§aPartida encontrada! Preparando arena..."));
             }
-            
+
             if (matchFoundSound) {
                 try {
                     p2.playSound(p2.getLocation(), org.bukkit.Sound.LEVEL_UP, 1.0f, 1.2f);
@@ -201,7 +208,7 @@ public class MatchManager {
         String brandingNome = plugin.getConfig().getString("ux.branding.nome", "PRIME LEAGUE");
         String brandingCor = plugin.getConfig().getString("ux.branding.cor", "§b");
         boolean mostrarBranding = plugin.getConfig().getBoolean("ux.branding.mostrar-em-titulos", true);
-        
+
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -211,18 +218,18 @@ public class MatchManager {
                 }
 
                 if (countdown[0] > 0) {
-                    String msg = plugin.getConfig().getString("messages.match.starting", 
+                    String msg = plugin.getConfig().getString("messages.match.starting",
                         "§aPartida iniciando em {countdown} segundos!")
                         .replace("{countdown}", String.valueOf(countdown[0]));
                     player1.sendMessage(msg);
                     player2.sendMessage(msg);
-                    
+
                     // Título visual durante countdown
                     if (countdownTitles) {
                         try {
                             String title = "§a§l" + countdown[0];
-                            String subtitle = mostrarBranding ? 
-                                brandingCor + "§l" + brandingNome + " §7Prepare-se!" : 
+                            String subtitle = mostrarBranding ?
+                                brandingCor + "§l" + brandingNome + " §7Prepare-se!" :
                                 "§7Prepare-se!";
                             TitleCompat.send(player1, title, subtitle);
                             TitleCompat.send(player2, title, subtitle);
@@ -230,23 +237,23 @@ public class MatchManager {
                             // Fallback para versões sem sendTitle
                         }
                     }
-                    
+
                     countdown[0]--;
                 } else {
                     // Iniciar match
                     match.setStatus(Match.MatchStatus.FIGHTING);
                     match.setStartTime(new Date());
-                    
-                    String msg = plugin.getConfig().getString("messages.match.started", 
+
+                    String msg = plugin.getConfig().getString("messages.match.started",
                         "§aPartida iniciada! Boa sorte!");
                     player1.sendMessage(msg);
                     player2.sendMessage(msg);
-                    
+
                     // Título ao iniciar match
                     if (countdownTitles) {
                         try {
-                            String title = mostrarBranding ? 
-                                brandingCor + "§l" + brandingNome : 
+                            String title = mostrarBranding ?
+                                brandingCor + "§l" + brandingNome :
                                 "§a§lPARTIDA INICIADA";
                             String subtitle = "§a§lBOA SORTE!";
                             TitleCompat.send(player1, title, subtitle);
@@ -255,7 +262,13 @@ public class MatchManager {
                             // Fallback
                         }
                     }
-                    
+
+                    // Atualizar scoreboard para status FIGHTING
+                    if (plugin.getScoreboardIntegration() != null && plugin.getScoreboardIntegration().isEnabled()) {
+                        plugin.getScoreboardIntegration().updateScoreboard(player1);
+                        plugin.getScoreboardIntegration().updateScoreboard(player2);
+                    }
+
                     cancel();
                 }
             }
@@ -297,7 +310,7 @@ public class MatchManager {
                 plugin.getLogger().warning("Erro ao atualizar ELO (EloAPI não disponível): " + e.getMessage());
             }
         }
-        
+
         // Salvar match no banco (via async)
         saveMatchToDatabase(match, eloChange);
 
@@ -308,33 +321,42 @@ public class MatchManager {
         // Atualizar stats x1 (wins/losses/winstreak)
         plugin.getStatsManager().updateStats(winnerUuid, loserUuid);
 
+        // NOVO: Registrar vitória/derrota via LeagueAPI
+        if (LeagueAPI.isEnabled()) {
+            // Gerar UUID do match (usar hash dos players + timestamp)
+            UUID matchId = UUID.nameUUIDFromBytes(
+                (winnerUuid.toString() + loserUuid.toString() + match.getStartTime().getTime()).getBytes()
+            );
+            LeagueAPI.recordX1Win(winnerUuid, loserUuid, matchId);
+        }
+
         // Mensagens
         String winnerName = winner != null ? winner.getName() : "Desconhecido";
         String loserName = loser != null ? loser.getName() : "Desconhecido";
-        String msg = plugin.getConfig().getString("messages.match.ended", 
+        String msg = plugin.getConfig().getString("messages.match.ended",
             "§a{winner} venceu o match contra {loser}!")
             .replace("{winner}", winnerName)
             .replace("{loser}", loserName);
-        
+
         // Evitar duplicação: se houver broadcast, não enviar mensagem individual
         boolean broadcastOnEnd = plugin.getConfig().getBoolean("match.broadcast-on-end", true);
         if (!broadcastOnEnd) {
         if (winner != null) winner.sendMessage(msg);
         if (loser != null) loser.sendMessage(msg);
         }
-        
+
         // Títulos ao vencer/perder
         boolean victorySound = plugin.getConfig().getBoolean("ux.victory-sound", true);
         boolean defeatSound = plugin.getConfig().getBoolean("ux.defeat-sound", true);
         String brandingNome = plugin.getConfig().getString("ux.branding.nome", "PRIME LEAGUE");
         String brandingCor = plugin.getConfig().getString("ux.branding.cor", "§b");
         boolean mostrarBranding = plugin.getConfig().getBoolean("ux.branding.mostrar-em-titulos", true);
-        
+
         // Título de vitória
         if (winner != null) {
                 try {
-                String title = mostrarBranding ? 
-                    brandingCor + "§l" + brandingNome : 
+                String title = mostrarBranding ?
+                    brandingCor + "§l" + brandingNome :
                     "§a§lVITÓRIA!";
                 String subtitle = "§7Você venceu " + loserName;
                 if (match.isRanked() && eloChange != 0) {
@@ -345,7 +367,7 @@ public class MatchManager {
             } catch (Exception e) {
                 // Fallback
             }
-            
+
             if (victorySound) {
                 try {
                     winner.playSound(winner.getLocation(), org.bukkit.Sound.LEVEL_UP, 1.0f, 1.5f);
@@ -359,12 +381,12 @@ public class MatchManager {
                 }
             }
         }
-        
+
         // Título de derrota
         if (loser != null) {
             try {
-                String title = mostrarBranding ? 
-                    brandingCor + "§l" + brandingNome : 
+                String title = mostrarBranding ?
+                    brandingCor + "§l" + brandingNome :
                     "§c§lDERROTA";
                 String subtitle = "§7Você perdeu para " + winnerName;
                 if (match.isRanked() && eloChange != 0) {
@@ -376,7 +398,7 @@ public class MatchManager {
             } catch (Exception e) {
                 // Fallback
             }
-            
+
             if (defeatSound) {
                 try {
                     loser.playSound(loser.getLocation(), org.bukkit.Sound.ANVIL_LAND, 0.5f, 0.8f);
@@ -390,7 +412,7 @@ public class MatchManager {
                 }
             }
         }
-        
+
         // Broadcast (opcional - pode ser desabilitado via config)
         if (broadcastOnEnd) {
         Bukkit.broadcastMessage(msg);
@@ -444,13 +466,25 @@ public class MatchManager {
 		// Limpar snapshots armazenados
 		snapshots.remove(match.getPlayer1());
 		snapshots.remove(match.getPlayer2());
-        
+
         // Limpar TAB prefix (se disponível)
         if (plugin.getTabIntegration() != null && plugin.getTabIntegration().isEnabled()) {
             Player p1 = Bukkit.getPlayer(match.getPlayer1());
             Player p2 = Bukkit.getPlayer(match.getPlayer2());
-            if (p1 != null) plugin.getTabIntegration().clearPrefix(p1);
-            if (p2 != null) plugin.getTabIntegration().clearPrefix(p2);
+            if (p1 != null) {
+                plugin.getTabIntegration().clearPrefix(p1);
+                // Limpar scoreboard contextual
+                if (plugin.getScoreboardIntegration() != null && plugin.getScoreboardIntegration().isEnabled()) {
+                    plugin.getScoreboardIntegration().clearScoreboard(p1);
+                }
+            }
+            if (p2 != null) {
+                plugin.getTabIntegration().clearPrefix(p2);
+                // Limpar scoreboard contextual
+                if (plugin.getScoreboardIntegration() != null && plugin.getScoreboardIntegration().isEnabled()) {
+                    plugin.getScoreboardIntegration().clearScoreboard(p2);
+                }
+            }
         }
     }
 
@@ -475,7 +509,7 @@ public class MatchManager {
         // Limpar inventário
         player.getInventory().clear();
         player.getInventory().setArmorContents(null);
-        
+
         // Remover effects
         for (org.bukkit.potion.PotionEffect effect : player.getActivePotionEffects()) {
             player.removePotionEffect(effect.getType());
@@ -571,7 +605,7 @@ public class MatchManager {
                     java.sql.PreparedStatement stmt = conn.prepareStatement(
                         "INSERT INTO x1_matches (player1_uuid, player2_uuid, winner_uuid, kit_name, ranked, elo_change, created_at) " +
                         "VALUES (?, ?, ?, ?, ?, ?, ?)");
-                    
+
                     stmt.setObject(1, match.getPlayer1());
                     stmt.setObject(2, match.getPlayer2());
                     stmt.setObject(3, match.getWinner());
@@ -585,7 +619,7 @@ public class MatchManager {
                     } else {
                         stmt.setTimestamp(7, new java.sql.Timestamp(System.currentTimeMillis()));
                     }
-                    
+
                     stmt.executeUpdate();
                 } catch (java.sql.SQLException e) {
                     plugin.getLogger().severe("Erro ao salvar match no banco: " + e.getMessage());
@@ -613,7 +647,7 @@ public class MatchManager {
 
         Arena arena = new Arena("default", world.getName(), spawn1, spawn2, center);
         plugin.getArenaManager().createArena("default", spawn1, spawn2, center);
-        
+
         plugin.getLogger().info("Arena padrão criada automaticamente");
         return arena;
     }
@@ -623,16 +657,16 @@ public class MatchManager {
      */
     private Kit createDefaultKit(String kitName) {
         Kit kit = new Kit(kitName);
-        
+
         // Kit básico: espada de diamante, maçã dourada
         org.bukkit.inventory.ItemStack sword = new org.bukkit.inventory.ItemStack(org.bukkit.Material.DIAMOND_SWORD, 1);
         org.bukkit.inventory.ItemStack apple = new org.bukkit.inventory.ItemStack(org.bukkit.Material.GOLDEN_APPLE, 64);
-        
+
         org.bukkit.inventory.ItemStack[] items = new org.bukkit.inventory.ItemStack[36];
         items[0] = sword;
         items[1] = apple;
         kit.setItems(items);
-        
+
         // Armor básico: diamante
         org.bukkit.inventory.ItemStack[] armor = new org.bukkit.inventory.ItemStack[4];
         armor[0] = new org.bukkit.inventory.ItemStack(org.bukkit.Material.DIAMOND_BOOTS, 1);
@@ -640,11 +674,11 @@ public class MatchManager {
         armor[2] = new org.bukkit.inventory.ItemStack(org.bukkit.Material.DIAMOND_CHESTPLATE, 1);
         armor[3] = new org.bukkit.inventory.ItemStack(org.bukkit.Material.DIAMOND_HELMET, 1);
         kit.setArmor(armor);
-        
+
         // Salvar kit
         plugin.getKitManager().saveKit(kit);
         plugin.getLogger().info("Kit padrão criado automaticamente: " + kitName);
-        
+
         return kit;
     }
 }

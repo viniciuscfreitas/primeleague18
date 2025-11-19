@@ -1,0 +1,21 @@
+name: PrimeleagueLeague
+version: 1.0.0
+main: com.primeleague.league.LeaguePlugin
+api-version: 1.8
+author: Primeleague
+description: League system with Event Sourcing for Primeleague server
+depend: [PrimeleagueCore]
+softdepend: [PrimeleagueClans, HolographicDisplays, Holograms, PlaceholderAPI]
+
+commands:
+  temporada:
+    description: Comandos de temporada e rankings
+    usage: /temporada [subcomando]
+    aliases: [temp, league]
+  pontos:
+    description: Mostra pontos de um clan ou player
+    usage: /pontos <clan/player> <nome>
+  top:
+    description: Mostra rankings
+    usage: /top [kills|points|elo] [page]
+

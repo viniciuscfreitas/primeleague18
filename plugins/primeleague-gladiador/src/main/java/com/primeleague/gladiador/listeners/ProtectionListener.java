@@ -9,7 +9,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 
 /**
  * Listener de proteção da arena
- * TODO: Implementar bloqueio de quebrar/colocar blocos durante evento
+ * Grug Brain: Bloqueia quebrar/colocar blocos durante evento Gladiador
  */
 public class ProtectionListener implements Listener {
 

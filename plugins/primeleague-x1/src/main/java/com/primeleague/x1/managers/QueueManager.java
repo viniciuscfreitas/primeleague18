@@ -90,6 +90,14 @@ public class QueueManager {
                 plugin.getTabIntegration().updateQueuePrefix(player);
             }
         }
+        
+        // Atualizar scoreboard contextual (se disponível)
+        if (plugin.getScoreboardIntegration() != null && plugin.getScoreboardIntegration().isEnabled()) {
+            Player player = Bukkit.getPlayer(playerUuid);
+            if (player != null) {
+                plugin.getScoreboardIntegration().updateScoreboard(player);
+            }
+        }
 
         return true;
     }
@@ -110,6 +118,14 @@ public class QueueManager {
                     Player player = Bukkit.getPlayer(playerUuid);
                     if (player != null) {
                         plugin.getTabIntegration().clearPrefix(player);
+                    }
+                }
+                
+                // Limpar scoreboard contextual (se disponível)
+                if (plugin.getScoreboardIntegration() != null && plugin.getScoreboardIntegration().isEnabled()) {
+                    Player player = Bukkit.getPlayer(playerUuid);
+                    if (player != null) {
+                        plugin.getScoreboardIntegration().clearScoreboard(player);
                     }
                 }
                 

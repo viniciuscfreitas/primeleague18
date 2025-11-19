@@ -1,0 +1,103 @@
+# League Plugin Configuration
+# Grug Brain: Config simples e direta
+
+# Temporadas
+seasons:
+  duration-days: 90  # 3 meses por temporada
+  auto-create: true  # Cria nova temporada automaticamente
+  name-format: "Temporada {year}-Q{quarter}"  # Ex: Temporada 2025-Q1
+
+# Cache
+cache:
+  points-ttl-seconds: 45  # TTL do cache Caffeine para pontos
+  points-max-size: 10000  # Máximo de entidades em cache
+  ranking-ttl-seconds: 60  # TTL do cache de rankings
+
+# Pontos por evento (configurável)
+points:
+  # Pontos por posição no Gladiador (clan)
+  gladiador-clan:
+    1: 50
+    2: 40
+    3: 30
+    4: 25
+    5: 20
+    6: 18
+    7: 15
+    8: 12
+    9: 10
+    10: 8
+    "11-20": 5  # Todos do 11º ao 20º ganham 5
+    default: 2  # Participação mínima
+
+  # Pontos por posição no Gladiador (player)
+  gladiador-player:
+    1: 25   # MVP global (mais kills do match inteiro)
+    2: 18
+    3: 15
+    4: 12
+    5: 10
+    6: 8
+    7: 6
+    8: 4
+    9: 2
+    10: 1
+    participation: 5  # Base por participar (mínimo 1 minuto)
+
+  # MVP interno por clan (motiva players de clans medianos)
+  player-points-mode: "per-clan-relative"  # "global" ou "per-clan-relative"
+  clan-mvp-bonus:
+    1: 15   # Player com mais kills do próprio clan ganha +15
+    2: 10   # 2º do clan ganha +10
+    3: 5    # 3º do clan ganha +5
+
+  # Bônus extras
+  bonus:
+    most-kills: 10      # Player com mais kills no match (global)
+    fastest-kill: 5     # Primeiro kill do evento
+    survived-longest: 8  # Último eliminado (não vencedor)
+
+  # Streak de vitórias (cria narrativa épica)
+  win-streak:
+    3: 20   # 3 vitórias seguidas = +20 extra no 4º Glad
+    5: 50   # 5 vitórias seguidas = +50 extra
+    10: 100 # 10 vitórias seguidas = +100 extra (lendário)
+
+# Prêmios finais (opcional)
+rewards:
+  enabled: true
+
+  # Prêmios de coins
+  top-clan-1-coins: 50000000    # 50M coins
+  top-clan-2-coins: 30000000    # 30M coins
+  top-clan-3-coins: 20000000    # 20M coins
+  top-player-1-coins: 10000000  # 10M coins
+  top-player-2-coins: 5000000   # 5M coins
+  top-player-3-coins: 3000000   # 3M coins
+
+  # Prêmios especiais (2025 players amam)
+  top-clan-1-tag: "[★ Campeão {year}]"  # Tag permanente
+  top-clan-1-trophy: true  # Troféu físico no /spawn
+  top-clan-1-discord-interview: true  # Entrevista no Discord
+
+  top-clan-2-tag: "[★ Vice {year}]"
+  top-clan-3-tag: "[★ Terceiro {year}]"
+
+  top-player-1-tag: "[★ Piloto Lendário {year}]"
+  top-player-1-vip: "eternal"  # VIP eterno
+  top-player-2-vip: "supreme-1month"  # VIP Supremo 1 mês
+  top-player-3-vip: "supreme-1month"
+
+  top-players-4-10-vip: "premium-1month"  # Top 4-10 ganham VIP Premium 1 mês
+
+# Holograma no spawn (opcional)
+hologram:
+  enabled: true
+  location:
+    world: "world"
+    x: 0.5
+    y: 100.0
+    z: 0.5
+  update-interval-seconds: 300  # Atualiza a cada 5 minutos
+  show-top: 5  # Mostra top 5 clans
+

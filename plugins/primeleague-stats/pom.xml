@@ -79,6 +79,15 @@
             <version>1.0.0</version>
             <scope>provided</scope>
         </dependency>
+        <!-- PrimeleagueLeague (softdepend - system scope for compile) -->
+        <dependency>
+            <groupId>com.primeleague</groupId>
+            <artifactId>primeleague-league</artifactId>
+            <version>1.0.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../primeleague-league/target/primeleague-league-1.0.0.jar</systemPath>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 </project>
 

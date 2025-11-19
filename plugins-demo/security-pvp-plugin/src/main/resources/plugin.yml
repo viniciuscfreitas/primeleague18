@@ -1,7 +1,0 @@
-name: SecurityPvP
-version: 1.0.0
-main: com.security.SecurityPlugin
-api-version: 1.8
-author: SecurityDev
-description: Plugin de segurança para servidor PvP - bloqueia ações não permitidas
-

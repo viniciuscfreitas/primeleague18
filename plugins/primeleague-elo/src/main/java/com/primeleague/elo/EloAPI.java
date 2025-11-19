@@ -3,6 +3,7 @@ package com.primeleague.elo;
 import com.primeleague.core.CoreAPI;
 import com.primeleague.core.models.PlayerData;
 import com.primeleague.elo.utils.EloCalculator;
+import com.primeleague.league.LeagueAPI;
 import org.bukkit.Bukkit;
 
 import java.util.List;
@@ -61,9 +62,17 @@ public class EloAPI {
         CoreAPI.savePlayer(loserData);
 
         int winnerEloChange = winnerNewElo - winnerOldElo;
+        int loserEloChange = loserNewElo - loserOldElo;
+
+        // NOVO: Registrar mudança de ELO via LeagueAPI
+        if (LeagueAPI.isEnabled()) {
+            LeagueAPI.recordEloChange(winnerUuid, winnerOldElo, winnerNewElo, "PvP Win");
+            LeagueAPI.recordEloChange(loserUuid, loserOldElo, loserNewElo, "PvP Loss");
+        }
+
         getPlugin().getLogger().info("ELO PvP atualizado: " + winnerData.getName() +
             " +" + winnerEloChange + " (" + winnerNewElo + "), " +
-            loserData.getName() + " " + (loserNewElo - loserOldElo) + " (" + loserNewElo + ")");
+            loserData.getName() + " " + loserEloChange + " (" + loserNewElo + ")");
 
         return winnerEloChange;
     }
@@ -90,6 +99,12 @@ public class EloAPI {
         CoreAPI.savePlayer(data);
 
         int eloChange = newElo - oldElo;
+
+        // NOVO: Registrar mudança de ELO via LeagueAPI
+        if (LeagueAPI.isEnabled()) {
+            LeagueAPI.recordEloChange(playerUuid, oldElo, newElo, reason);
+        }
+
         getPlugin().getLogger().info("ELO atualizado: " + data.getName() + " +" + eloChange +
             " (" + reason + ") - ELO: " + oldElo + " -> " + newElo);
 

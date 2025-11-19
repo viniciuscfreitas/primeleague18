@@ -136,6 +136,51 @@ public class CoreAPI {
         }
     }
 
+    /**
+     * Busca apenas o saldo (money) do player
+     * Grug Brain: Query ultra-leve - apenas 1 campo vs 17 do getPlayer()
+     * Uso: quando só precisa saldo, não carregar tudo!
+     * 
+     * @param uuid UUID do player
+     * @return Saldo em centavos (long) ou 0 se player não existe
+     */
+    public static long getPlayerMoney(UUID uuid) {
+        try (Connection conn = getDatabase().getConnection()) {
+            PreparedStatement stmt = conn.prepareStatement(
+                "SELECT money FROM users WHERE uuid = ?");
+            stmt.setObject(1, uuid);
+
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getLong("money");
+            }
+            return 0L; // Player não existe
+        } catch (SQLException e) {
+            getPlugin().getLogger().severe("Erro ao buscar money: " + e.getMessage());
+            return 0L;
+        }
+    }
+
+    /**
+     * Atualiza apenas o saldo (money) do player
+     * Grug Brain: UPDATE direto, atômico, simples
+     * Uso: quando só precisa atualizar saldo
+     * 
+     * @param uuid UUID do player
+     * @param money Novo saldo em centavos (long)
+     */
+    public static void updatePlayerMoney(UUID uuid, long money) {
+        try (Connection conn = getDatabase().getConnection()) {
+            PreparedStatement stmt = conn.prepareStatement(
+                "UPDATE users SET money = ? WHERE uuid = ?");
+            stmt.setLong(1, money);
+            stmt.setObject(2, uuid);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            getPlugin().getLogger().severe("Erro ao atualizar money: " + e.getMessage());
+        }
+    }
+
     public static void savePlayer(PlayerData data) {
         try (Connection conn = getDatabase().getConnection()) {
             // Grug Brain: ON CONFLICT (name) - name é UNIQUE, sempre atualiza registro existente

@@ -26,6 +26,7 @@ public class X1Plugin extends JavaPlugin {
     private StatsManager statsManager;
     private com.primeleague.x1.integrations.DiscordIntegration discordIntegration;
     private com.primeleague.x1.integrations.TabIntegration tabIntegration;
+    private com.primeleague.x1.integrations.ScoreboardIntegration scoreboardIntegration;
     private X1PlaceholderExpansion placeholderExpansion;
     private com.primeleague.x1.commands.DuelCommand duelCommand;
     private Map<String, TopCache> topCache;
@@ -78,6 +79,9 @@ public class X1Plugin extends JavaPlugin {
         
         // Integração TAB (opcional)
         tabIntegration = new com.primeleague.x1.integrations.TabIntegration(this);
+        
+        // Integração Scoreboard (opcional)
+        scoreboardIntegration = new com.primeleague.x1.integrations.ScoreboardIntegration(this);
 
         // Inicializar comando de duelo (usado via /x1)
         duelCommand = new com.primeleague.x1.commands.DuelCommand(this);
@@ -105,6 +109,7 @@ public class X1Plugin extends JavaPlugin {
 
         // Registrar listeners
         getServer().getPluginManager().registerEvents(new com.primeleague.x1.listeners.MatchListener(this), this);
+        getServer().getPluginManager().registerEvents(new com.primeleague.x1.listeners.QueueListener(this), this);
 
         // Registrar comandos (verificar se estão definidos no plugin.yml)
         org.bukkit.command.PluginCommand x1Cmd = getCommand("x1");
@@ -115,19 +120,8 @@ public class X1Plugin extends JavaPlugin {
             getLogger().warning("Comando /x1 não encontrado no plugin.yml!");
         }
         
-        // Não registrar /duel - padronização para /x1
-        
-        org.bukkit.command.PluginCommand kitCmd = getCommand("kit");
-        if (kitCmd != null) {
-            kitCmd.setExecutor(new com.primeleague.x1.commands.KitCommand(this));
-            getLogger().info("Comando /kit registrado");
-        }
-        
-        org.bukkit.command.PluginCommand arenaCmd = getCommand("arena");
-        if (arenaCmd != null) {
-            arenaCmd.setExecutor(new com.primeleague.x1.commands.ArenaCommand(this));
-            getLogger().info("Comando /arena registrado");
-        }
+        // Grug Brain: Tudo via /x1 - sem comandos separados /kit e /arena
+        // Use: /x1 admin kit ... e /x1 admin arena ...
 
         // Setup PlaceholderAPI (se disponível)
         setupPlaceholderAPI();
@@ -290,6 +284,10 @@ public class X1Plugin extends JavaPlugin {
 
     public com.primeleague.x1.integrations.TabIntegration getTabIntegration() {
         return tabIntegration;
+    }
+
+    public com.primeleague.x1.integrations.ScoreboardIntegration getScoreboardIntegration() {
+        return scoreboardIntegration;
     }
 
     public com.primeleague.x1.commands.DuelCommand getDuelCommand() {

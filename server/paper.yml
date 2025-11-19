@@ -8,6 +8,7 @@
 # IRC: #paperspigot @ irc.spi.gt ( http://irc.spi.gt/iris/?channels=PaperSpigot )
 
 config-version: 9
+data-value-allowed-items: []
 effect-modifiers:
   strength: 1.3
   weakness: -0.5
@@ -15,15 +16,15 @@ stackable-buckets:
   lava: false
   water: false
   milk: false
-data-value-allowed-items: []
+warnWhenSettingExcessiveVelocity: true
 settings:
   limit-player-interactions: true
   baby-zombie-movement-speed: 0.5
-warnWhenSettingExcessiveVelocity: true
 world-settings:
   default:
     verbose: false
     disable-explosion-knockback: false
+    fix-cannons: false
     water-over-lava-flow-speed: 5
     tnt-entity-height-nerf: 0
     generator-settings:
@@ -38,7 +39,6 @@ world-settings:
       village: false
       flat-bedrock: false
     allow-block-location-tab-completion: false
-    fix-cannons: false
     use-async-lighting: true
     disable-thunder: true
     tick-next-tick-list-cap: 5000
@@ -53,46 +53,46 @@ world-settings:
       disable-chest-cat-detection: true
     container-update-tick-rate: 3
     keep-spawn-loaded: true
-    falling-blocks-collide-with-signs: false
     disable-mood-sounds: true
-    disable-ice-and-snow: true
+    falling-blocks-collide-with-signs: false
     portal-search-radius: 0
-    player-blocking-damage-multiplier: 0.5
-    remove-invalid-mob-spawner-tile-entities: true
-    mob-spawner-tick-rate: 0
+    disable-ice-and-snow: true
+    disable-teleportation-suffocation-check: true
+    nether-ceiling-void-damage: false
     tnt-explosion-volume: 4.0
+    optimize-explosions: true
+    remove-invalid-mob-spawner-tile-entities: true
+    falling-block-height-nerf: 0
+    mob-spawner-tick-rate: 0
     max-growth-height:
       cactus: 3
       reeds: 3
-    optimize-explosions: true
-    nether-ceiling-void-damage: false
-    falling-block-height-nerf: 0
-    disable-teleportation-suffocation-check: true
-    load-chunks:
-      enderpearls: false
-      tnt-entities: false
-      falling-blocks: false
-    lava-flow-speed:
-      normal: 30
-      nether: 10
-    fishing-time-range:
-      MinimumTicks: 100
-      MaximumTicks: 900
+    player-blocking-damage-multiplier: 0.5
+    remove-unloaded:
+      enderpearls: true
+      tnt-entities: true
+      falling-blocks: true
+    despawn-ranges:
+      soft: 8
+      hard: 32
     player-exhaustion:
       block-break: 0.02500000037252903
       swimming: 0.014999999664723873
     cache-chunk-maps: false
-    despawn-ranges:
-      soft: 8
-      hard: 32
     squid-spawn-height:
       minimum: 45.0
       maximum: 63.0
     fast-drain:
       lava: false
       water: false
-    remove-unloaded:
-      enderpearls: true
-      tnt-entities: true
-      falling-blocks: true
+    lava-flow-speed:
+      normal: 30
+      nether: 10
+    fishing-time-range:
+      MinimumTicks: 100
+      MaximumTicks: 900
+    load-chunks:
+      enderpearls: false
+      tnt-entities: false
+      falling-blocks: false
     view-distance: 6
