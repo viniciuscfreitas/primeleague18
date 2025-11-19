@@ -1,27 +1,26 @@
-# Queue Settings
+# Configurações de Fila
 queue:
-  # Tempo máximo na queue antes de remover (em segundos)
+  # Tempo máximo na fila antes de remover (em segundos)
   timeout: 300
-  # Range inicial de ELO para matchmaking ranked (±100)
+  # Alcance inicial de ELO para ranqueado (±100)
   elo-range-initial: 100
-  # Incremento de range se não encontrar match
+  # Incremento do alcance se não encontrar partida
   elo-range-increment: 50
-  # Range máximo de ELO para matchmaking
+  # Alcance máximo de ELO para matchmaking
   elo-range-max: 500
-  # Máximo de matches processados por tick (melhora performance com muitos players)
+  # Máximo de partidas processadas por tick (melhora performance)
   max-matches-per-tick: 3
-
-# Match Settings
+# Configurações de Partida
 match:
-  # Tempo de countdown antes de iniciar (em segundos)
+  # Tempo de contagem antes de iniciar (em segundos)
   countdown: 5
-  # Tempo máximo de match (em segundos, 0 = ilimitado)
+  # Tempo máximo de partida (em segundos, 0 = ilimitado)
   max-duration: 600
-  # Cancelar match se player desconectar
+  # Cancelar partida se jogador desconectar
   cancel-on-disconnect: true
-  # Penalizar ELO se desconectar durante match ranked
+  # Penalizar ELO se desconectar durante partida ranqueada
   penalize-disconnect: false
-  # Broadcast mensagem quando match termina
+  # Enviar broadcast quando a partida termina
   broadcast-on-end: true
 
 # Kits
@@ -33,7 +32,7 @@ kits:
 
 # Arenas
 arenas:
-  # Reset automático de arenas após match (requer WorldEdit ou implementação manual)
+  # Reset automático de arenas após partida (requer WorldEdit ou implementação manual)
   auto-reset: false
   # Tempo para reset automático (em segundos)
   reset-delay: 10
@@ -65,30 +64,50 @@ integrations:
   placeholderapi:
     enabled: true
 
+# UX Settings
+ux:
+  # Títulos durante countdown
+  countdown-titles: true
+  # Som ao encontrar match
+  match-found-sound: true
+  # Som ao vencer
+  victory-sound: true
+  # Som ao perder
+  defeat-sound: true
+  # Mostrar posição na queue
+  show-queue-position: true
+  # Mostrar tempo de match
+  show-match-time: true
+  # Branding
+  branding:
+    nome: "PRIME LEAGUE"
+    cor: "§b"
+    mostrar-em-titulos: true
+
 # Mensagens (PT-BR)
 messages:
   queue:
-    joined: "§aVocê entrou na queue para {kit} ({mode})"
-    left: "§cVocê saiu da queue"
-    match-found: "§aMatch encontrado! Preparando arena..."
-    timeout: "§cVocê foi removido da queue por timeout"
+    joined: "§aVocê entrou na fila para {kit} ({mode})"
+    left: "§cVocê saiu da fila"
+    match-found: "§aPartida encontrada! Preparando arena..."
+    timeout: "§cVocê foi removido da fila por tempo excedido"
   match:
-    starting: "§aMatch iniciando em {countdown} segundos!"
-    started: "§aMatch iniciado! Boa sorte!"
-    ended: "§a{winner} venceu o match contra {loser}!"
-    cancelled: "§cMatch cancelado"
-    disconnect: "§c{player} desconectou. Match cancelado."
+    starting: "§aPartida iniciando em {countdown} segundos!"
+    started: "§aPartida iniciada! Boa sorte!"
+    ended: "§a{winner} venceu a partida contra {loser}!"
+    cancelled: "§cPartida cancelada"
+    disconnect: "§c{player} desconectou. Partida cancelada."
   duel:
     challenge-sent: "§aDesafio enviado para {player}"
-    challenge-received: "§a{player} te desafiou! Use /duel accept ou /duel deny"
+    challenge-received: "§a{player} te desafiou! Use /x1 aceitar ou /x1 negar"
     accepted: "§a{player} aceitou seu desafio!"
     denied: "§c{player} negou seu desafio"
-    not-found: "§cPlayer não encontrado ou offline"
+    not-found: "§cJogador não encontrado ou offline"
   elo:
     change: "§7ELO: {change} §7({elo})"
   error:
-    already-in-queue: "§cVocê já está na queue"
-    already-in-match: "§cVocê já está em um match"
+    already-in-queue: "§cVocê já está na fila"
+    already-in-match: "§cVocê já está em uma partida"
     no-arena: "§cNenhuma arena disponível no momento"
     invalid-kit: "§cKit inválido: {kit}"
     permission: "§cVocê não tem permissão para isso"

@@ -1,0 +1,94 @@
+scores:
+  hidden: true
+
+display:
+  title:
+    text:
+      - "&b&lPRIME &7&lLEAGUE"
+    random: false
+    interval: 40
+    
+  line-1:
+    text:
+      - "&8&m━━━━━━━━━━━━━━━━━━"
+    random: false
+    interval: 200
+    score: 15
+    
+  line-2:
+    text:
+      - "&7Modo: &e%x1_queue_mode%"
+    random: false
+    interval: 40
+    score: 14
+    
+  line-3:
+    text:
+      - "&7Kit: &b%x1_queue_kit%"
+    random: false
+    interval: 40
+    score: 13
+    
+  line-4:
+    text:
+      - " "
+    random: false
+    interval: 200
+    score: 12
+    
+  line-5:
+    text:
+      - "&7Procurando oponente..."
+    random: false
+    interval: 40
+    score: 11
+    
+  line-6:
+    text:
+      - "&7Na fila: &a%x1_queue_size%"
+    random: false
+    interval: 40
+    score: 10
+    
+  line-7:
+    text:
+      - " "
+    random: false
+    interval: 200
+    score: 9
+    
+  line-8:
+    text:
+      - "&7ELO: &e%elo_symbol% &b%chat_elo%"
+    random: false
+    interval: 40
+    score: 8
+    
+  line-9:
+    text:
+      - "&7Wins: &a%x1_wins% &7Losses: &c%x1_losses%"
+    random: false
+    interval: 40
+    score: 7
+    
+  line-10:
+    text:
+      - " "
+    random: false
+    interval: 200
+    score: 6
+    
+  line-11:
+    text:
+      - "&7www.primeleague.com.br"
+    random: false
+    interval: 200
+    score: 5
+    
+  line-12:
+    text:
+      - "&8&m━━━━━━━━━━━━━━━━━━"
+    random: false
+    interval: 200
+    score: 4
+
