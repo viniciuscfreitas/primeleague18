@@ -1,0 +1,14 @@
+name: PrimeleagueGladiador
+version: 1.0.0
+main: com.primeleague.gladiador.GladiadorPlugin
+api-version: 1.8
+author: Primeleague
+description: Sistema de eventos Gladiador para servidor Primeleague
+depend: [PrimeleagueCore, PrimeleagueClans]
+softdepend: [PrimeleagueEconomy, PrimeleagueDiscord]
+
+commands:
+  gladiador:
+    description: Comandos do Gladiador
+    usage: /gladiador <subcomando>
+    aliases: [glad]

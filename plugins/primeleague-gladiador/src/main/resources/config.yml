@@ -1,0 +1,49 @@
+# Configuração Gladiador
+# Grug Brain: Config simples, direto ao ponto
+
+# Arena Settings (VALORES DE TESTE - BAIXOS)
+arena:
+  preparation-time: 30         # 30 segundos para teste (normal: 300)
+  initial-border-size: 100     # Border inicial menor para teste (normal: 500)
+  final-border-size: 20        # Border final
+  border-shrink-interval: 10   # Diminui a cada 10 segundos para teste (normal: 60)
+  max-duration: 300            # 5 minutos max para teste (normal: 1800)
+
+# Match Settings (VALORES DE TESTE)
+match:
+  min-clans: 2                 # Mínimo 2 clans
+  max-players-per-clan: 10     # Max 10 por clan para teste (normal: 100)
+  cancel-on-disconnect: false  # Don't cancel, just eliminate player
+
+# Rewards (via Economy plugin) - VALORES DE TESTE
+rewards:
+  winner-coins-per-player: 10000    # 10k coins para teste (normal: 1000000)
+
+# Discord Integration (via PrimeleagueDiscord)
+discord:
+  enabled: false
+  channel-id: ""  # ID do canal Discord para notificações globais
+  color: 15844367  # Gold color
+
+# Cache
+cache:
+  stats-duration: 300  # 5 minutes
+
+# Messages (PT-BR)
+messages:
+  join-success: "§aSeu clan entrou no Gladiador! {players} membros online."
+  leave-success: "§cSeu clan saiu do Gladiador."
+  event-started: "§6§lGLADIADOR INICIADO! {clans} clans na arena!"
+  preparation: "§eFase de preparação... PvP em {time}s"
+  preparation-end: "§c§lPvP ATIVADO! Boa sorte!"
+  clan-eliminated: "§cClan {clan} foi eliminado! Restam {remaining} clans."
+  winner: "§6§lClan {clan} venceu o Gladiador!"
+  no-clan: "§cVocê precisa estar em um clan para participar!"
+  event-running: "§cJá existe um evento em andamento!"
+  no-event: "§cNão há evento em andamento!"
+  no-arena: "§cNenhuma arena configurada! Use /glad arena create"
+  admin-only: "§cApenas administradores podem usar este comando!"
+  arena-created: "§aArena '{name}' criada com sucesso!"
+  arena-deleted: "§aArena '{name}' deletada!"
+  spawn-added: "§aSpawn point adicionado à arena '{name}'"
+  spectator-set: "§aSpectator spawn definido para arena '{name}'"
