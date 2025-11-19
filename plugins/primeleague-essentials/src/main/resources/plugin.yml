@@ -1,0 +1,132 @@
+name: PrimeleagueEssentials
+version: 1.0.0
+main: com.primeleague.essentials.EssentialsPlugin
+depend: [PrimeleagueCore]
+softdepend: [PrimeleagueClans, PrimeleagueEconomy, PrimeleagueLeague]
+api-version: 1.8
+authors: [Antigravity]
+
+commands:
+  # Teleport
+  tpa:
+    description: Solicita teletransporte para um jogador
+    usage: /tpa <player>
+  tpaccept:
+    description: Aceita solicitação de teletransporte
+    usage: /tpaccept
+  tpdeny:
+    description: Nega solicitação de teletransporte
+    usage: /tpdeny
+  tpacancel:
+    description: Cancela solicitação enviada
+    usage: /tpacancel
+  back:
+    description: Volta para a última localização
+    usage: /back
+  top:
+    description: Teleporta para o topo
+    usage: /top
+  near:
+    description: Mostra jogadores próximos
+    usage: /near
+  
+  # Homes
+  sethome:
+    description: Define uma home
+    usage: /sethome [nome]
+  home:
+    description: Teleporta para uma home
+    usage: /home [nome]
+  delhome:
+    description: Remove uma home
+    usage: /delhome [nome]
+  homes:
+    description: Lista suas homes
+    usage: /homes
+    
+  # Spawn
+  spawn:
+    description: Teleporta para o spawn
+    usage: /spawn
+  setspawn:
+    description: Define o spawn global
+    usage: /setspawn
+    permission: essentials.admin
+    
+  # Warps
+  warp:
+    description: Teleporta para uma warp
+    usage: /warp <nome>
+  setwarp:
+    description: Define uma warp
+    usage: /setwarp <nome>
+    permission: essentials.admin
+  delwarp:
+    description: Remove uma warp
+    usage: /delwarp <nome>
+    permission: essentials.admin
+  warps:
+    description: Lista warps disponíveis
+    usage: /warps
+    
+  # Utils
+  fly:
+    description: Ativa/desativa modo de voo
+    usage: /fly [player]
+    permission: essentials.fly
+  heal:
+    description: Cura vida e fome
+    usage: /heal [player]
+    permission: essentials.heal
+  feed:
+    description: Enche a fome
+    usage: /feed [player]
+    permission: essentials.feed
+  invsee:
+    description: Vê inventário de outro jogador
+    usage: /invsee <player>
+    permission: essentials.invsee
+  enderchest:
+    description: Abre seu enderchest ou de outro jogador
+    usage: /enderchest [player]
+    aliases: [ec]
+    permission: essentials.enderchest
+  hat:
+    description: Coloca item da mão na cabeça
+    usage: /hat
+    permission: essentials.hat
+  ptime:
+    description: Muda tempo pessoal
+    usage: /ptime <day|night|reset>
+    permission: essentials.ptime
+  pweather:
+    description: Muda clima pessoal
+    usage: /pweather <sun|rain|reset>
+    permission: essentials.pweather
+  workbench:
+    description: Abre bancada de trabalho
+    usage: /workbench
+    aliases: [wb, craft]
+    permission: essentials.workbench
+  anvil:
+    description: Abre bigorna
+    usage: /anvil
+    permission: essentials.anvil
+  sudo:
+    description: Executa comando como outro jogador
+    usage: /sudo <player> <comando>
+    permission: essentials.admin
+  gamemode:
+    description: Muda modo de jogo
+    usage: /gamemode <modo> [player]
+    aliases: [gm]
+    permission: essentials.gamemode
+  
+  # Kits
+  kit:
+    description: Pega um kit
+    usage: /kit [nome]
+  createkit:
+    description: Cria um kit com itens do inventário
+    usage: /createkit <nome> <delay>
+    permission: essentials.admin
