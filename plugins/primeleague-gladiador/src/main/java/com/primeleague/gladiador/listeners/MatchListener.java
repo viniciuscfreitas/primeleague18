@@ -54,35 +54,67 @@ public class MatchListener implements Listener {
         plugin.getLogger().info("Player " + player.getName() + " desconectou durante Gladiador - eliminado");
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent event) {
-        if (!(event.getEntity() instanceof Player)) return;
+        // Só processar se ambos são players (PvP)
+        if (!(event.getEntity() instanceof Player) || !(event.getDamager() instanceof Player)) {
+            return;
+        }
+
         Player victim = (Player) event.getEntity();
+        Player attacker = (Player) event.getDamager();
 
         MatchManager matchManager = plugin.getMatchManager();
         GladiadorMatch match = matchManager.getCurrentMatch();
 
-        if (match == null) return;
-        if (!match.hasPlayer(victim.getUniqueId())) return;
+        // Se não há match, não interferir (deixar outros plugins gerenciarem)
+        if (match == null) {
+            return;
+        }
 
-        // Bloquear dano antes do início
-        if (match.getState() != GladiadorMatch.MatchState.ACTIVE) {
+        // Verificar se AMBOS estão no match
+        boolean victimInMatch = match.hasPlayer(victim.getUniqueId());
+        boolean attackerInMatch = match.hasPlayer(attacker.getUniqueId());
+
+        // Se apenas um está no match, não interferir (pode ser PvP normal fora do match)
+        if (!victimInMatch && !attackerInMatch) {
+            return;
+        }
+
+        // Se apenas um está no match, bloquear (proteção)
+        if (victimInMatch != attackerInMatch) {
             event.setCancelled(true);
             return;
         }
 
-        // Verificar Friendly Fire
-        if (event.getDamager() instanceof Player) {
-            Player attacker = (Player) event.getDamager();
-            if (match.hasPlayer(attacker.getUniqueId())) {
-                ClanData victimClan = ClansPlugin.getInstance().getClansManager().getClanByMember(victim.getUniqueId());
-                ClanData attackerClan = ClansPlugin.getInstance().getClansManager().getClanByMember(attacker.getUniqueId());
-
-                if (victimClan != null && attackerClan != null && victimClan.getId() == attackerClan.getId()) {
-                    event.setCancelled(true);
-                    attacker.sendMessage(ChatColor.RED + "Você não pode atacar membros do seu clan!");
-                }
+        // Ambos estão no match - verificar estado
+        // Bloquear dano antes do início
+        if (match.getState() != GladiadorMatch.MatchState.ACTIVE) {
+            event.setCancelled(true);
+            if (match.getState() == GladiadorMatch.MatchState.PREPARATION) {
+                attacker.sendMessage(ChatColor.YELLOW + "O PvP ainda não foi ativado! Aguarde o início do match.");
             }
+            return;
+        }
+
+        // Match está ACTIVE - verificar Friendly Fire
+        ClansPlugin clansPlugin = (ClansPlugin) org.bukkit.Bukkit.getPluginManager().getPlugin("PrimeleagueClans");
+        if (clansPlugin == null) return;
+        ClanData victimClan = clansPlugin.getClansManager().getClanByMember(victim.getUniqueId());
+        ClanData attackerClan = clansPlugin.getClansManager().getClanByMember(attacker.getUniqueId());
+
+        if (victimClan != null && attackerClan != null && victimClan.getId() == attackerClan.getId()) {
+            event.setCancelled(true);
+            attacker.sendMessage(ChatColor.RED + "Você não pode atacar membros do seu clan!");
+            return;
+        }
+
+        // PvP permitido - apenas descancelar se foi cancelado por outros plugins
+        // Grug Brain: HIGHEST priority garante que processamos depois, mas só descancelamos se necessário
+        // Isso evita conflitos desnecessários com outros plugins
+        if (event.isCancelled()) {
+            // Verificar se foi cancelado por plugins de delay/pvp152 (permitir PvP no Gladiador)
+            event.setCancelled(false);
         }
     }
 

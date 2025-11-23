@@ -66,16 +66,16 @@ public class TabIntegration {
                 return;
             }
 
-            // Validar método setTabListName (para atualizar nome na tablist)
+            // Validar métodos do TabPlayer (para compatibilidade)
+            // Nota: TAB gerencia tablist automaticamente, não precisamos modificar
             try {
-                setTabListNameMethod = tabPlayerClass.getMethod("setTabListName", String.class);
+                tabPlayerClass.getMethod("setTabListName", String.class);
             } catch (NoSuchMethodException e) {
                 // Tentar método alternativo
                 try {
-                    setTabListNameMethod = tabPlayerClass.getMethod("setCustomTabName", String.class);
+                    tabPlayerClass.getMethod("setCustomTabName", String.class);
                 } catch (NoSuchMethodException e2) {
-                    plugin.getLogger().info("TAB: Método setTabListName não encontrado - integração tablist desabilitada");
-                    return;
+                    // Métodos não encontrados, mas não é crítico - TAB gerencia automaticamente
                 }
             }
 

@@ -83,10 +83,7 @@ public class GladiadorPlugin extends JavaPlugin {
             }, 6000L, 6000L); // A cada 5 minutos (6000 ticks)
         }
 
-        // PlaceholderAPI integration desabilitada temporariamente
-        // TODO: Implementar GladiadorPlaceholderExpansion estendendo PlaceholderExpansion
-        // e adicionar PlaceholderAPI como dependência no pom.xml
-        /*
+        // PlaceholderAPI integration (softdepend)
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             try {
                 new com.primeleague.gladiador.integrations.GladiadorPlaceholderExpansion(this).register();
@@ -95,7 +92,6 @@ public class GladiadorPlugin extends JavaPlugin {
                 getLogger().warning("Erro ao registrar PlaceholderAPI: " + e.getMessage());
             }
         }
-        */
 
         getLogger().info("PrimeleagueGladiador habilitado");
     }

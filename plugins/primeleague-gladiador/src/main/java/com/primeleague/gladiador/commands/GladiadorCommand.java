@@ -7,6 +7,7 @@ import com.primeleague.gladiador.GladiadorPlugin;
 import com.primeleague.gladiador.managers.MatchManager;
 import com.primeleague.gladiador.models.Arena;
 import com.primeleague.gladiador.models.GladiadorMatch;
+import com.primeleague.gladiador.models.GladiadorStats;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
@@ -77,6 +78,9 @@ public class GladiadorCommand implements CommandExecutor, TabCompleter {
             case "setexitspawn":
                 handleSetExitSpawn(player);
                 break;
+            case "top":
+                handleTop(player);
+                break;
             case "help":
             case "ajuda":
                 handleHelp(player);
@@ -98,7 +102,12 @@ public class GladiadorCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        ClansManager clansManager = ClansPlugin.getInstance().getClansManager();
+        ClansPlugin clansPlugin = (ClansPlugin) org.bukkit.Bukkit.getPluginManager().getPlugin("PrimeleagueClans");
+        if (clansPlugin == null) {
+            player.sendMessage(ChatColor.RED + "Erro: PrimeleagueClans não encontrado!");
+            return;
+        }
+        ClansManager clansManager = clansPlugin.getClansManager();
         ClanData clan = clansManager.getClanByMember(player.getUniqueId());
 
         if (clan == null) {
@@ -126,10 +135,90 @@ public class GladiadorCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(ChatColor.YELLOW + "Você saiu do evento Gladiador.");
     }
 
+    private void handleTop(Player player) {
+        // Grug Brain: Query async para não bloquear thread principal
+        new org.bukkit.scheduler.BukkitRunnable() {
+            @Override
+            public void run() {
+                List<GladiadorStats> top;
+                try {
+                    top = plugin.getStatsManager().getTopByWins(10);
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Erro ao buscar top clans: " + e.getMessage());
+                    top = new java.util.ArrayList<>();
+                }
+                
+                final List<GladiadorStats> finalTop = top;
+                new org.bukkit.scheduler.BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        // Verificar se player ainda está online
+                        if (!player.isOnline()) {
+                            return;
+                        }
+                        
+                        player.sendMessage("");
+                        player.sendMessage(ChatColor.GOLD + "=== " + ChatColor.BOLD + "TOP 10 CLANS - GLADIADOR" + ChatColor.RESET + ChatColor.GOLD + " ===");
+                        player.sendMessage("");
+                        
+                        if (finalTop == null || finalTop.isEmpty()) {
+                            player.sendMessage(ChatColor.GRAY + "Nenhum clan participou ainda.");
+                            return;
+                        }
+                        
+                        ClansPlugin clansPlugin = (ClansPlugin) Bukkit.getPluginManager().getPlugin("PrimeleagueClans");
+                        ClansManager clansManager = null;
+                        if (clansPlugin != null) {
+                            clansManager = clansPlugin.getClansManager();
+                        }
+                        
+                        for (int i = 0; i < finalTop.size(); i++) {
+                            GladiadorStats stats = finalTop.get(i);
+                            if (stats == null) continue;
+                            
+                            String clanTag = "Clan #" + stats.getClanId();
+                            
+                            if (clansManager != null) {
+                                ClanData clanData = clansManager.getClan(stats.getClanId());
+                                if (clanData != null) {
+                                    clanTag = clanData.getTag();
+                                }
+                            }
+                            
+                            String medal = "";
+                            if (i == 0) medal = ChatColor.GOLD + "🥇 ";
+                            else if (i == 1) medal = ChatColor.GRAY + "🥈 ";
+                            else if (i == 2) medal = ChatColor.RED + "🥉 ";
+                            
+                            player.sendMessage(String.format("%s%s%d. %s%s %s- %s%d vitórias%s | %s%d kills%s | %s%.1f%% WR",
+                                medal,
+                                ChatColor.YELLOW,
+                                i + 1,
+                                ChatColor.WHITE,
+                                clanTag,
+                                ChatColor.GRAY,
+                                ChatColor.GREEN,
+                                stats.getWins(),
+                                ChatColor.GRAY,
+                                ChatColor.AQUA,
+                                stats.getTotalKills(),
+                                ChatColor.GRAY,
+                                ChatColor.LIGHT_PURPLE,
+                                stats.getWinRate()
+                            ));
+                        }
+                        player.sendMessage("");
+                    }
+                }.runTask(plugin);
+            }
+        }.runTaskAsynchronously(plugin);
+    }
+
     private void handleHelp(Player player) {
         player.sendMessage(ChatColor.GOLD + "=== Comandos Gladiador ===");
         player.sendMessage(ChatColor.YELLOW + "/gladiador - Entra no evento (se estiver aberto)");
         player.sendMessage(ChatColor.YELLOW + "/gladiador sair - Sai do evento");
+        player.sendMessage(ChatColor.YELLOW + "/gladiador top - Mostra top 10 clans");
 
         if (player.hasPermission("primeleague.admin")) {
             player.sendMessage(ChatColor.RED + "=== Comandos Admin ===");
@@ -247,6 +336,7 @@ public class GladiadorCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             List<String> completions = new ArrayList<>();
+            completions.add("top");
             if (sender.hasPermission("primeleague.admin")) {
                 completions.addAll(Arrays.asList("iniciar", "cancelar", "setarena", "setspawn", "setexitspawn", "spectator"));
             }

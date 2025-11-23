@@ -24,9 +24,11 @@ match:
   max-players-per-clan: 10     # Max 10 por clan para teste (normal: 100)
   cancel-on-disconnect: false  # Don't cancel, just eliminate player
 
-# Rewards (via Economy plugin) - VALORES DE TESTE
+# Rewards (via Economy plugin ou ClansManager) - VALORES DE TESTE
 rewards:
-  winner-coins-per-player: 10000    # 10k coins para teste (normal: 1000000)
+  winner-coins-per-player: 10000    # 10k coins para teste (normal: 1000000) - em dólares se Economy disponível
+  winner-clan-balance: 100000000   # 1kk centavos para clan balance (fallback se Economy não disponível)
+  event-points: 100                 # Pontos de evento para ClansManager
 
 # Discord Integration (via PrimeleagueDiscord)
 discord:
