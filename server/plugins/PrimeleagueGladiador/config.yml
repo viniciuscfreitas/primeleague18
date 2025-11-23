@@ -1,6 +1,15 @@
 # Configuração Gladiador
 # Grug Brain: Config simples, direto ao ponto
 
+# Spawn Settings
+spawn:
+  exit-world: "world"      # Mundo do spawn de saída
+  exit-x: 0.5
+  exit-y: 64.0
+  exit-z: 0.5
+  exit-yaw: 0.0
+  exit-pitch: 0.0
+
 # Arena Settings (VALORES DE TESTE - BAIXOS)
 arena:
   preparation-time: 30         # 30 segundos para teste (normal: 300)
@@ -15,14 +24,16 @@ match:
   max-players-per-clan: 10     # Max 10 por clan para teste (normal: 100)
   cancel-on-disconnect: false  # Don't cancel, just eliminate player
 
-# Rewards (via Economy plugin) - VALORES DE TESTE
+# Rewards (via Economy plugin ou ClansManager) - VALORES DE TESTE
 rewards:
-  winner-coins-per-player: 10000    # 10k coins para teste (normal: 1000000)
+  winner-coins-per-player: 10000    # 10k coins para teste (normal: 1000000) - em dólares se Economy disponível
+  winner-clan-balance: 100000000   # 1kk centavos para clan balance (fallback se Economy não disponível)
+  event-points: 100                 # Pontos de evento para ClansManager
 
-# Discord Webhook
+# Discord Integration (via PrimeleagueDiscord)
 discord:
   enabled: false
-  webhook-url: ""
+  channel-id: ""  # ID do canal Discord para notificações globais
   color: 15844367  # Gold color
 
 # Cache

@@ -5,7 +5,7 @@ import com.primeleague.clans.models.ClanData;
 import com.primeleague.clans.models.ClanMember;
 import com.primeleague.core.CoreAPI;
 import com.primeleague.core.models.PlayerData;
-import com.primeleague.economy.EconomyAPI;
+// import com.primeleague.economy.EconomyAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -618,10 +618,12 @@ public class ClanCommand implements CommandExecutor {
         }
 
         // Verificar se Economy está habilitado
+        /*
         if (!EconomyAPI.isEnabled()) {
             player.sendMessage(ChatColor.RED + "Sistema de economia não está disponível.");
             return true;
         }
+        */
 
         // Buscar saldo do clan
         long balanceCents = plugin.getClansManager().getClanBalance(clan.getId());
@@ -632,6 +634,9 @@ public class ClanCommand implements CommandExecutor {
         return true;
     }
 
+    /**
+     * /clan depositar <valor>
+     */
     /**
      * /clan depositar <valor>
      */
@@ -667,27 +672,22 @@ public class ClanCommand implements CommandExecutor {
         }
 
         // Verificar saldo do player
-        if (!EconomyAPI.hasBalance(player.getUniqueId(), amount)) {
-            player.sendMessage(ChatColor.RED + "Você não tem saldo suficiente.");
+        if (!EconomyAPI.hasMoney(player.getUniqueId(), amount)) {
+            player.sendMessage(ChatColor.RED + "Você não tem dinheiro suficiente.");
             return true;
         }
 
-        // Remover do player e adicionar ao clan
+        // Depositar
+        EconomyAPI.removeMoney(player.getUniqueId(), amount, "Depósito Clan");
         long cents = (long) (amount * 100);
-        double removed = EconomyAPI.removeMoney(player.getUniqueId(), amount, "CLAN_DEPOSIT");
-        if (removed > 0) {
-            if (plugin.getClansManager().addClanBalance(clan.getId(), cents)) {
-                // Log transação
-                EconomyAPI.logTransactionPublic(player.getUniqueId(), null, amount, "CLAN_DEPOSIT", "Depósito no clan " + clan.getName());
-                player.sendMessage(ChatColor.GREEN + "Você depositou " + ChatColor.YELLOW + String.format("%.2f", amount) +
-                    ChatColor.GRAY + " ¢ " + ChatColor.GREEN + "no banco do clan!");
-            } else {
-                // Reverter se falhar
-                EconomyAPI.addMoney(player.getUniqueId(), amount, "CLAN_DEPOSIT_REVERT");
-                player.sendMessage(ChatColor.RED + "Erro ao depositar. Seu dinheiro foi devolvido.");
-            }
+        
+        if (plugin.getClansManager().addClanBalance(clan.getId(), cents)) {
+            player.sendMessage(ChatColor.GREEN + "Você depositou " + ChatColor.YELLOW + String.format("%.2f", amount) +
+                ChatColor.GRAY + " ¢ " + ChatColor.GREEN + "no banco do clan!");
         } else {
-            player.sendMessage(ChatColor.RED + "Erro ao remover dinheiro.");
+            // Reverter se falhar
+            EconomyAPI.addMoney(player.getUniqueId(), amount, "Depósito Clan Revertido");
+            player.sendMessage(ChatColor.RED + "Erro ao depositar. Seu dinheiro foi devolvido.");
         }
 
         return true;
@@ -744,9 +744,7 @@ public class ClanCommand implements CommandExecutor {
 
         // Remover do clan e adicionar ao player
         if (plugin.getClansManager().removeClanBalance(clan.getId(), amountCents)) {
-            EconomyAPI.addMoney(player.getUniqueId(), amount, "CLAN_WITHDRAW");
-            // Log transação
-            EconomyAPI.logTransactionPublic(player.getUniqueId(), null, amount, "CLAN_WITHDRAW", "Saque do clan " + clan.getName());
+            EconomyAPI.addMoney(player.getUniqueId(), amount, "Saque Clan");
             player.sendMessage(ChatColor.GREEN + "Você sacou " + ChatColor.YELLOW + String.format("%.2f", amount) +
                 ChatColor.GRAY + " ¢ " + ChatColor.GREEN + "do banco do clan!");
         } else {
@@ -818,7 +816,7 @@ public class ClanCommand implements CommandExecutor {
         }
 
         // Expulsar membro
-        if (plugin.getClansManager().removeMember(clan.getId(), targetUuid)) {
+        if (plugin.getClansManager().kickMember(clan.getId(), targetUuid, player.getUniqueId())) {
             player.sendMessage(ChatColor.GREEN + targetName + " foi expulso do clan.");
             if (target != null) {
                 target.sendMessage(ChatColor.RED + "Você foi expulso do clan " + ChatColor.YELLOW + clan.getName() + ChatColor.RED + ".");
@@ -831,541 +829,7 @@ public class ClanCommand implements CommandExecutor {
     }
 
     /**
-     * /clan promover <player>
-     */
-    private boolean handlePromover(Player player, String[] args) {
-        if (args.length < 2) {
-            player.sendMessage(ChatColor.RED + "Uso: /clan promover <player>");
-            return true;
-        }
-
-        ClanData clan = plugin.getClansManager().getClanByMember(player.getUniqueId());
-        if (clan == null) {
-            player.sendMessage(ChatColor.RED + "Você não está em um clan.");
-            return true;
-        }
-
-        // Apenas Leader pode promover
-        String role = plugin.getClansManager().getMemberRole(clan.getId(), player.getUniqueId());
-        if (!"LEADER".equals(role)) {
-            player.sendMessage(ChatColor.RED + "Apenas o líder pode promover membros.");
-            return true;
-        }
-
-        // Buscar player
-        Player target = Bukkit.getPlayer(args[1]);
-        UUID targetUuid = null;
-        String targetName = args[1];
-
-        if (target != null) {
-            targetUuid = target.getUniqueId();
-            targetName = target.getName();
-        } else {
-            PlayerData targetData = CoreAPI.getPlayerByName(args[1]);
-            if (targetData != null) {
-                targetUuid = targetData.getUuid();
-            } else {
-                player.sendMessage(ChatColor.RED + "Player não encontrado: " + args[1]);
-                return true;
-            }
-        }
-
-        // Verificar se target é membro do clan
-        ClanData targetClan = plugin.getClansManager().getClanByMember(targetUuid);
-        if (targetClan == null || targetClan.getId() != clan.getId()) {
-            player.sendMessage(ChatColor.RED + targetName + " não é membro do seu clan.");
-            return true;
-        }
-
-        // Verificar role atual
-        String targetRole = plugin.getClansManager().getMemberRole(clan.getId(), targetUuid);
-        if ("LEADER".equals(targetRole)) {
-            player.sendMessage(ChatColor.RED + targetName + " já é o líder do clan.");
-            return true;
-        }
-        if ("OFFICER".equals(targetRole)) {
-            player.sendMessage(ChatColor.RED + targetName + " já é oficial.");
-            return true;
-        }
-
-        // Promover para Officer
-        if (plugin.getClansManager().updateMemberRole(clan.getId(), targetUuid, "OFFICER")) {
-            player.sendMessage(ChatColor.GREEN + targetName + " foi promovido a " + ChatColor.BLUE + "Oficial" + ChatColor.GREEN + ".");
-            if (target != null) {
-                target.sendMessage(ChatColor.GREEN + "Você foi promovido a " + ChatColor.BLUE + "Oficial" + ChatColor.GREEN + " do clan " + ChatColor.YELLOW + clan.getName() + ChatColor.GREEN + "!");
-            }
-        } else {
-            player.sendMessage(ChatColor.RED + "Erro ao promover membro.");
-        }
-
-        return true;
-    }
-
-    /**
-     * /clan rebaixar <player>
-     */
-    private boolean handleRebaixar(Player player, String[] args) {
-        if (args.length < 2) {
-            player.sendMessage(ChatColor.RED + "Uso: /clan rebaixar <player>");
-            return true;
-        }
-
-        ClanData clan = plugin.getClansManager().getClanByMember(player.getUniqueId());
-        if (clan == null) {
-            player.sendMessage(ChatColor.RED + "Você não está em um clan.");
-            return true;
-        }
-
-        // Apenas Leader pode rebaixar
-        String role = plugin.getClansManager().getMemberRole(clan.getId(), player.getUniqueId());
-        if (!"LEADER".equals(role)) {
-            player.sendMessage(ChatColor.RED + "Apenas o líder pode rebaixar membros.");
-            return true;
-        }
-
-        // Buscar player
-        Player target = Bukkit.getPlayer(args[1]);
-        UUID targetUuid = null;
-        String targetName = args[1];
-
-        if (target != null) {
-            targetUuid = target.getUniqueId();
-            targetName = target.getName();
-        } else {
-            PlayerData targetData = CoreAPI.getPlayerByName(args[1]);
-            if (targetData != null) {
-                targetUuid = targetData.getUuid();
-            } else {
-                player.sendMessage(ChatColor.RED + "Player não encontrado: " + args[1]);
-                return true;
-            }
-        }
-
-        // Verificar se target é membro do clan
-        ClanData targetClan = plugin.getClansManager().getClanByMember(targetUuid);
-        if (targetClan == null || targetClan.getId() != clan.getId()) {
-            player.sendMessage(ChatColor.RED + targetName + " não é membro do seu clan.");
-            return true;
-        }
-
-        // Verificar role atual
-        String targetRole = plugin.getClansManager().getMemberRole(clan.getId(), targetUuid);
-        if ("LEADER".equals(targetRole)) {
-            player.sendMessage(ChatColor.RED + "Você não pode rebaixar o líder! Use /clan transferir para transferir a liderança.");
-            return true;
-        }
-        if ("MEMBER".equals(targetRole)) {
-            player.sendMessage(ChatColor.RED + targetName + " já é membro.");
-            return true;
-        }
-
-        // Rebaixar para Member
-        if (plugin.getClansManager().updateMemberRole(clan.getId(), targetUuid, "MEMBER")) {
-            player.sendMessage(ChatColor.GREEN + targetName + " foi rebaixado a " + ChatColor.GRAY + "Membro" + ChatColor.GREEN + ".");
-            if (target != null) {
-                target.sendMessage(ChatColor.GRAY + "Você foi rebaixado a Membro do clan " + ChatColor.YELLOW + clan.getName() + ChatColor.GRAY + ".");
-            }
-        } else {
-            player.sendMessage(ChatColor.RED + "Erro ao rebaixar membro.");
-        }
-
-        return true;
-    }
-
-    /**
-     * /clan transferir <player>
-     */
-    private boolean handleTransferir(Player player, String[] args) {
-        if (args.length < 2) {
-            player.sendMessage(ChatColor.RED + "Uso: /clan transferir <player>");
-            return true;
-        }
-
-        ClanData clan = plugin.getClansManager().getClanByMember(player.getUniqueId());
-        if (clan == null) {
-            player.sendMessage(ChatColor.RED + "Você não está em um clan.");
-            return true;
-        }
-
-        // Apenas Leader pode transferir
-        String role = plugin.getClansManager().getMemberRole(clan.getId(), player.getUniqueId());
-        if (!"LEADER".equals(role)) {
-            player.sendMessage(ChatColor.RED + "Apenas o líder pode transferir a liderança.");
-            return true;
-        }
-
-        // Buscar player
-        Player target = Bukkit.getPlayer(args[1]);
-        UUID targetUuid = null;
-        String targetName = args[1];
-
-        if (target != null) {
-            targetUuid = target.getUniqueId();
-            targetName = target.getName();
-        } else {
-            PlayerData targetData = CoreAPI.getPlayerByName(args[1]);
-            if (targetData != null) {
-                targetUuid = targetData.getUuid();
-            } else {
-                player.sendMessage(ChatColor.RED + "Player não encontrado: " + args[1]);
-                return true;
-            }
-        }
-
-        // Verificar se target é membro do clan
-        ClanData targetClan = plugin.getClansManager().getClanByMember(targetUuid);
-        if (targetClan == null || targetClan.getId() != clan.getId()) {
-            player.sendMessage(ChatColor.RED + targetName + " não é membro do seu clan.");
-            return true;
-        }
-
-        // Verificar se não está transferindo para si mesmo
-        if (targetUuid.equals(player.getUniqueId())) {
-            player.sendMessage(ChatColor.RED + "Você já é o líder do clan!");
-            return true;
-        }
-
-        // Transferir liderança
-        if (plugin.getClansManager().transferLeadership(clan.getId(), targetUuid)) {
-            player.sendMessage(ChatColor.GREEN + "Liderança transferida para " + ChatColor.YELLOW + targetName + ChatColor.GREEN + "!");
-            if (target != null) {
-                target.sendMessage(ChatColor.GREEN + "Você é agora o " + ChatColor.RED + "Líder" + ChatColor.GREEN + " do clan " + ChatColor.YELLOW + clan.getName() + ChatColor.GREEN + "!");
-            }
-        } else {
-            player.sendMessage(ChatColor.RED + "Erro ao transferir liderança.");
-        }
-
-        return true;
-    }
-
-    /**
-     * /clan home [definir]
-     */
-    private boolean handleHome(Player player, String[] args) {
-        ClanData clan = plugin.getClansManager().getClanByMember(player.getUniqueId());
-        if (clan == null) {
-            player.sendMessage(ChatColor.RED + "Você não está em um clan.");
-            return true;
-        }
-
-        // Se tem argumento "definir", definir home
-        if (args.length > 1 && args[1].equalsIgnoreCase("definir")) {
-            // Apenas Leader pode definir home
-            String role = plugin.getClansManager().getMemberRole(clan.getId(), player.getUniqueId());
-            if (!"LEADER".equals(role)) {
-                player.sendMessage(ChatColor.RED + "Apenas o líder pode definir a home do clan.");
-                return true;
-            }
-
-            // Obter localização atual
-            Location loc = player.getLocation();
-            String worldName = loc.getWorld().getName();
-            double x = loc.getX();
-            double y = loc.getY();
-            double z = loc.getZ();
-
-            // Salvar home
-            if (plugin.getClansManager().setClanHome(clan.getId(), worldName, x, y, z)) {
-                player.sendMessage(ChatColor.GREEN + "Home do clan definida em " + ChatColor.YELLOW +
-                    String.format("%.0f, %.0f, %.0f", x, y, z) + ChatColor.GRAY + " no mundo " +
-                    ChatColor.YELLOW + worldName + ChatColor.GREEN + "!");
-            } else {
-                player.sendMessage(ChatColor.RED + "Erro ao definir home do clan.");
-            }
-            return true;
-        }
-
-        // Teleportar para home
-        if (clan.getHomeWorld() == null || clan.getHomeX() == null ||
-            clan.getHomeY() == null || clan.getHomeZ() == null) {
-            player.sendMessage(ChatColor.RED + "O clan não tem home definida. Use /clan home definir (apenas líder).");
-            return true;
-        }
-
-        // Buscar mundo
-        World world = Bukkit.getWorld(clan.getHomeWorld());
-        if (world == null) {
-            player.sendMessage(ChatColor.RED + "Mundo da home não encontrado: " + clan.getHomeWorld());
-            return true;
-        }
-
-        // Criar location e teleportar
-        Location homeLoc = new Location(world, clan.getHomeX(), clan.getHomeY(), clan.getHomeZ());
-        player.teleport(homeLoc);
-        player.sendMessage(ChatColor.GREEN + "Teleportado para a home do clan!");
-
-        return true;
-    }
-
-    /**
-     * /clan stats [TAG]
-     */
-    private boolean handleStats(Player player, String[] args) {
-        ClanData clan = null;
-
-        if (args.length > 1) {
-            // Buscar por TAG
-            String tagClean = ChatColor.stripColor(args[1]).toUpperCase();
-            clan = plugin.getClansManager().getClanByTag(tagClean);
-            if (clan == null) {
-                player.sendMessage(ChatColor.RED + "Clan não encontrado com a tag: " + args[1]);
-                return true;
-            }
-        } else {
-            // Mostrar stats do clan do player
-            clan = plugin.getClansManager().getClanByMember(player.getUniqueId());
-            if (clan == null) {
-                player.sendMessage(ChatColor.RED + "Você não está em um clan.");
-                return true;
-            }
-        }
-
-        final ClanData finalClan = clan;
-        final Player finalPlayer = player;
-
-        // Query async para calcular stats
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            try (Connection conn = CoreAPI.getDatabase().getConnection()) {
-                // Calcular kills totais
-                final int[] totalKills = {0};
-                try (PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT COALESCE(SUM(u.kills), 0) as total_kills " +
-                    "FROM clan_members cm " +
-                    "JOIN users u ON cm.player_uuid = u.uuid " +
-                    "WHERE cm.clan_id = ?")) {
-                    stmt.setInt(1, finalClan.getId());
-                    try (ResultSet rs = stmt.executeQuery()) {
-                        if (rs.next()) {
-                            totalKills[0] = rs.getInt("total_kills");
-                        }
-                    }
-                }
-
-                // Calcular deaths totais
-                final int[] totalDeaths = {0};
-                try (PreparedStatement stmt = conn.prepareStatement(
-                    "SELECT COALESCE(SUM(u.deaths), 0) as total_deaths " +
-                    "FROM clan_members cm " +
-                    "JOIN users u ON cm.player_uuid = u.uuid " +
-                    "WHERE cm.clan_id = ?")) {
-                    stmt.setInt(1, finalClan.getId());
-                    try (ResultSet rs = stmt.executeQuery()) {
-                        if (rs.next()) {
-                            totalDeaths[0] = rs.getInt("total_deaths");
-                        }
-                    }
-                }
-
-                // Calcular ELO médio
-                final double avgElo = plugin.getClansManager().getClanAverageElo(finalClan.getId());
-
-                // K/D ratio
-                final double kdRatio = totalDeaths[0] > 0 ? (double) totalKills[0] / totalDeaths[0] : totalKills[0];
-
-                // Contar membros
-                final List<ClanMember> members = plugin.getClansManager().getMembers(finalClan.getId());
-                final int memberCount = members.size();
-
-                // Voltar à thread principal para enviar mensagens
-                plugin.getServer().getScheduler().runTask(plugin, () -> {
-                    finalPlayer.sendMessage(ChatColor.GOLD + "=== Stats do Clan " + ChatColor.YELLOW + finalClan.getName() + ChatColor.GOLD + " ===");
-                    finalPlayer.sendMessage(ChatColor.YELLOW + "Tag: " + ChatColor.WHITE + finalClan.getTag());
-                    finalPlayer.sendMessage(ChatColor.YELLOW + "Membros: " + ChatColor.WHITE + memberCount);
-                    finalPlayer.sendMessage(ChatColor.YELLOW + "Kills Totais: " + ChatColor.WHITE + totalKills[0]);
-                    finalPlayer.sendMessage(ChatColor.YELLOW + "Deaths Totais: " + ChatColor.WHITE + totalDeaths[0]);
-                    finalPlayer.sendMessage(ChatColor.YELLOW + "K/D Ratio: " + ChatColor.WHITE + String.format("%.2f", kdRatio));
-                    finalPlayer.sendMessage(ChatColor.YELLOW + "ELO Médio: " + ChatColor.WHITE + String.format("%.0f", avgElo));
-                });
-            } catch (SQLException e) {
-                plugin.getLogger().severe("Erro ao calcular stats do clan: " + e.getMessage());
-                plugin.getServer().getScheduler().runTask(plugin, () -> {
-                    finalPlayer.sendMessage(ChatColor.RED + "Erro ao calcular stats do clan.");
-                });
-            }
-        });
-
-        return true;
-    }
-
-    /**
-     * Mostra ajuda
-     */
-    private void sendHelp(Player player) {
-        player.sendMessage(ChatColor.GOLD + "=== Comandos de Clan ===");
-        player.sendMessage(ChatColor.YELLOW + "/clan criar <nome> <tag>" + ChatColor.WHITE + " - Cria um novo clan");
-        player.sendMessage(ChatColor.YELLOW + "/clan sair" + ChatColor.WHITE + " - Sai do seu clan");
-        player.sendMessage(ChatColor.YELLOW + "/clan info [TAG]" + ChatColor.WHITE + " - Mostra informações do clan");
-        player.sendMessage(ChatColor.YELLOW + "/clan membros" + ChatColor.WHITE + " - Lista membros do clan");
-        player.sendMessage(ChatColor.YELLOW + "/clan convidar <player>" + ChatColor.WHITE + " - Convida um jogador " + ChatColor.GRAY + "(Leader/Officer)");
-        player.sendMessage(ChatColor.YELLOW + "/clan aceitar [TAG]" + ChatColor.WHITE + " - Aceita um convite");
-        player.sendMessage(ChatColor.YELLOW + "/clan top [elo|kills] [página]" + ChatColor.WHITE + " - Mostra ranking de clans");
-        player.sendMessage(ChatColor.YELLOW + "/clan banco" + ChatColor.WHITE + " - Mostra saldo do clan");
-        player.sendMessage(ChatColor.YELLOW + "/clan depositar <valor>" + ChatColor.WHITE + " - Deposita dinheiro no clan");
-        player.sendMessage(ChatColor.YELLOW + "/clan sacar <valor>" + ChatColor.WHITE + " - Saca dinheiro do clan " + ChatColor.GRAY + "(Leader/Officer)");
-        player.sendMessage(ChatColor.YELLOW + "/clan expulsar <player>" + ChatColor.WHITE + " - Expulsa um membro " + ChatColor.GRAY + "(Leader/Officer)");
-        player.sendMessage(ChatColor.YELLOW + "/clan promover <player>" + ChatColor.WHITE + " - Promove membro a Oficial " + ChatColor.GRAY + "(Leader)");
-        player.sendMessage(ChatColor.YELLOW + "/clan rebaixar <player>" + ChatColor.WHITE + " - Rebaixa Oficial a Membro " + ChatColor.GRAY + "(Leader)");
-        player.sendMessage(ChatColor.YELLOW + "/clan transferir <player>" + ChatColor.WHITE + " - Transfere liderança " + ChatColor.GRAY + "(Leader)");
-        player.sendMessage(ChatColor.YELLOW + "/clan home [definir]" + ChatColor.WHITE + " - Teleporta para home ou define home " + ChatColor.GRAY + "(Leader)");
-        player.sendMessage(ChatColor.YELLOW + "/clan stats [TAG]" + ChatColor.WHITE + " - Mostra estatísticas do clan");
-        player.sendMessage(ChatColor.YELLOW + "/clan tag cor <cor1> [cor2] [cor3]" + ChatColor.WHITE + " - Altera cor da tag " + ChatColor.GRAY + "(Leader)");
-    }
-
-    /**
-     * Retorna display da role
-     */
-    private String getRoleDisplay(String role) {
-        if ("LEADER".equals(role)) {
-            return ChatColor.RED + "Líder";
-        } else if ("OFFICER".equals(role)) {
-            return ChatColor.BLUE + "Oficial";
-        } else {
-            return ChatColor.GRAY + "Membro";
-        }
-    }
-
-    /**
-     * /clan admin <subcomando>
-     */
-    private boolean handleAdmin(Player player, String[] args) {
-        // Verificar permissão
-        if (!player.hasPermission("clans.admin")) {
-            player.sendMessage(ChatColor.RED + "Você não tem permissão para usar este comando.");
-            return true;
-        }
-
-        if (args.length < 2) {
-            sendAdminHelp(player);
-            return true;
-        }
-
-        String subCmd = args[1].toLowerCase();
-
-        switch (subCmd) {
-            case "criar":
-                return handleAdminCriar(player, args);
-            case "deletar":
-                return handleAdminDeletar(player, args);
-            case "set":
-                return handleAdminSet(player, args);
-            case "reload":
-                return handleAdminReload(player);
-            case "alertar":
-                return handleAdminAlertar(player, args);
-            case "removealert":
-                return handleAdminRemovealert(player, args);
-            case "addwin":
-                return handleAdminAddwin(player, args);
-            case "addpoints":
-                return handleAdminAddpoints(player, args);
-            case "removepoints":
-                return handleAdminRemovepoints(player, args);
-            default:
-                sendAdminHelp(player);
-                return true;
-        }
-    }
-
-    /**
-     * /clan admin criar <nome> <tag> <leader>
-     */
-    private boolean handleAdminCriar(Player player, String[] args) {
-        if (args.length < 5) {
-            player.sendMessage(ChatColor.RED + "Uso: /clan admin criar <nome> <tag> <leader>");
-            return true;
-        }
-
-        // Juntar nome (pode ter espaços)
-        StringBuilder nomeBuilder = new StringBuilder();
-        for (int i = 2; i < args.length - 1; i++) {
-            if (i > 2) nomeBuilder.append(" ");
-            nomeBuilder.append(args[i]);
-        }
-        String name = nomeBuilder.toString().trim();
-        String tag = args[args.length - 2];
-        String leaderName = args[args.length - 1];
-
-        // Buscar UUID do leader
-        PlayerData leaderData = CoreAPI.getPlayerByName(leaderName);
-        if (leaderData == null) {
-            player.sendMessage(ChatColor.RED + "Player não encontrado: " + leaderName);
-            return true;
-        }
-
-        UUID leaderUuid = leaderData.getUuid();
-
-        // Criar clan
-        ClanData clan = plugin.getClansManager().createClan(name, tag, leaderUuid);
-        if (clan != null) {
-            player.sendMessage(ChatColor.GREEN + "Clan criado: " + ChatColor.YELLOW + clan.getName() + ChatColor.GREEN + " (" + clan.getTag() + ")");
-        } else {
-            player.sendMessage(ChatColor.RED + "Erro ao criar clan. Verifique se o nome/tag são válidos e se o player não está em outro clan.");
-        }
-
-        return true;
-    }
-
-    /**
-     * /clan admin deletar <clan>
-     */
-    private boolean handleAdminDeletar(Player player, String[] args) {
-        if (args.length < 3) {
-            player.sendMessage(ChatColor.RED + "Uso: /clan admin deletar <clan>");
-            return true;
-        }
-
-        // Juntar nome do clan (pode ter espaços)
-        StringBuilder nomeBuilder = new StringBuilder();
-        for (int i = 2; i < args.length; i++) {
-            if (i > 2) nomeBuilder.append(" ");
-            nomeBuilder.append(args[i]);
-        }
-        String clanName = nomeBuilder.toString().trim();
-
-        // Buscar clan por nome (busca exata)
-        ClanData clan = null;
-        try (Connection conn = CoreAPI.getDatabase().getConnection();
-             PreparedStatement stmt = conn.prepareStatement(
-                "SELECT id FROM clans WHERE name = ?")) {
-            stmt.setString(1, clanName);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    int clanId = rs.getInt("id");
-                    clan = plugin.getClansManager().getClan(clanId);
-                }
-            }
-        } catch (SQLException e) {
-            plugin.getLogger().severe("Erro ao buscar clan: " + e.getMessage());
-            player.sendMessage(ChatColor.RED + "Erro ao buscar clan.");
-            return true;
-        }
-
-        if (clan == null) {
-            player.sendMessage(ChatColor.RED + "Clan não encontrado: " + clanName);
-            return true;
-        }
-
-        // Deletar clan (CASCADE deleta membros, invites, bank)
-        try (Connection conn = CoreAPI.getDatabase().getConnection();
-             PreparedStatement stmt = conn.prepareStatement(
-                "DELETE FROM clans WHERE id = ?")) {
-            stmt.setInt(1, clan.getId());
-            int rows = stmt.executeUpdate();
-            if (rows > 0) {
-                player.sendMessage(ChatColor.GREEN + "Clan deletado: " + ChatColor.YELLOW + clan.getName());
-            } else {
-                player.sendMessage(ChatColor.RED + "Erro ao deletar clan.");
-            }
-        } catch (SQLException e) {
-            plugin.getLogger().severe("Erro ao deletar clan: " + e.getMessage());
-            player.sendMessage(ChatColor.RED + "Erro ao deletar clan.");
-        }
-
-        return true;
-    }
-
-    /**
-     * /clan admin set <clan> <campo> <valor>
+     * /clan admin set <TAG> <campo> <valor>
      */
     private boolean handleAdminSet(Player player, String[] args) {
         if (args.length < 5) {
@@ -1385,16 +849,16 @@ public class ClanCommand implements CommandExecutor {
             // Valor é o último arg (pode ter espaços se juntado manualmente, mas vamos assumir que é o último)
             valor = args[args.length - 1];
             // Nome do clan está entre args[2] e args[args.length - 3]
-            for (int i = 2; i < args.length - 2; i++) {
-                if (i > 2) nomeBuilder.append(" ");
+            for (int i = 3; i < args.length - 2; i++) {
+                if (i > 3) nomeBuilder.append(" ");
                 nomeBuilder.append(args[i]);
             }
         } else {
             // Para tag e leader, valor é palavra única
             valor = args[args.length - 1];
             // Nome do clan está entre args[2] e args[args.length - 3]
-            for (int i = 2; i < args.length - 2; i++) {
-                if (i > 2) nomeBuilder.append(" ");
+            for (int i = 3; i < args.length - 2; i++) {
+                if (i > 3) nomeBuilder.append(" ");
                 nomeBuilder.append(args[i]);
             }
         }
@@ -1402,7 +866,7 @@ public class ClanCommand implements CommandExecutor {
 
         // Buscar clan por tag (primeiro tenta por tag, depois por nome)
         ClanData clan = null;
-        String tagCleanSearch = ChatColor.stripColor(clanName).toUpperCase();
+        String tagCleanSearch = ChatColor.stripColor(args[3]).toUpperCase();
         clan = plugin.getClansManager().getClanByTag(tagCleanSearch);
         
         // Se não encontrou por tag, tenta por nome

@@ -24,6 +24,7 @@ public class X1Plugin extends JavaPlugin {
     private KitManager kitManager;
     private ArenaManager arenaManager;
     private StatsManager statsManager;
+    private com.primeleague.x1.managers.AntiFarmManager antiFarmManager;
     private com.primeleague.x1.integrations.DiscordIntegration discordIntegration;
     private com.primeleague.x1.integrations.TabIntegration tabIntegration;
     private com.primeleague.x1.integrations.ScoreboardIntegration scoreboardIntegration;
@@ -71,10 +72,11 @@ public class X1Plugin extends JavaPlugin {
         kitManager = new KitManager(this);
         arenaManager = new ArenaManager(this);
         statsManager = new StatsManager(this);
+        antiFarmManager = new com.primeleague.x1.managers.AntiFarmManager(this);
         
         // Inicializar integrações
         if (getConfig().getBoolean("integrations.discord.enabled", true)) {
-        discordIntegration = new com.primeleague.x1.integrations.DiscordIntegration(this);
+            discordIntegration = new com.primeleague.x1.integrations.DiscordIntegration(this);
         }
         
         // Integração TAB (opcional)
@@ -110,6 +112,7 @@ public class X1Plugin extends JavaPlugin {
         // Registrar listeners
         getServer().getPluginManager().registerEvents(new com.primeleague.x1.listeners.MatchListener(this), this);
         getServer().getPluginManager().registerEvents(new com.primeleague.x1.listeners.QueueListener(this), this);
+        getServer().getPluginManager().registerEvents(new com.primeleague.x1.listeners.MatchMovementListener(this), this);
 
         // Registrar comandos (verificar se estão definidos no plugin.yml)
         org.bukkit.command.PluginCommand x1Cmd = getCommand("x1");
@@ -276,6 +279,10 @@ public class X1Plugin extends JavaPlugin {
 
     public StatsManager getStatsManager() {
         return statsManager;
+    }
+
+    public com.primeleague.x1.managers.AntiFarmManager getAntiFarmManager() {
+        return antiFarmManager;
     }
 
     public com.primeleague.x1.integrations.DiscordIntegration getDiscordIntegration() {

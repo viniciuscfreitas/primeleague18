@@ -16,7 +16,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Comando principal /x1
@@ -25,9 +27,13 @@ import java.util.UUID;
 public class X1Command implements CommandExecutor {
 
     private final X1Plugin plugin;
+    // Rate limit: UUID -> timestamp da última vez que entrou na queue
+    private final Map<UUID, Long> queueCooldowns;
+    private static final long QUEUE_COOLDOWN_MS = 2000; // 2 segundos
 
     public X1Command(X1Plugin plugin) {
         this.plugin = plugin;
+        this.queueCooldowns = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -84,6 +90,7 @@ public class X1Command implements CommandExecutor {
         player.sendMessage(ChatColor.YELLOW + "/x1 espectar <jogador> - Espectar partida");
 		player.sendMessage(ChatColor.YELLOW + "/x1 admin kit|arena ... - Administração");
 		player.sendMessage(ChatColor.YELLOW + "/x1 desafiar <jogador> [kit] - Desafiar jogador");
+        player.sendMessage(ChatColor.GRAY + "  Padrão: qualquer lugar, seus itens. Use [kit] para arena.");
         player.sendMessage(ChatColor.YELLOW + "/x1 aceitar - Aceitar desafio");
         player.sendMessage(ChatColor.YELLOW + "/x1 negar - Negar desafio");
     }
@@ -96,6 +103,15 @@ public class X1Command implements CommandExecutor {
             player.sendMessage(ChatColor.RED + "Uso: /x1 fila <kit> [ranqueado]");
             return true;
         }
+
+        // Rate limit check
+        Long lastUse = queueCooldowns.get(player.getUniqueId());
+        if (lastUse != null && System.currentTimeMillis() - lastUse < QUEUE_COOLDOWN_MS) {
+            long remaining = (QUEUE_COOLDOWN_MS - (System.currentTimeMillis() - lastUse)) / 1000;
+            player.sendMessage("§cAguarde " + remaining + " segundo" + (remaining != 1 ? "s" : "") + " antes de entrar na fila novamente.");
+            return true;
+        }
+        queueCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
 
         String kit = args[1];
         boolean ranked = args.length > 2 && args[2].equalsIgnoreCase("ranqueado");
@@ -409,6 +425,7 @@ public class X1Command implements CommandExecutor {
 	private boolean handleDuelChallenge(Player player, String[] args) {
         if (args.length < 2) {
 			player.sendMessage(ChatColor.RED + "Uso: /x1 desafiar <jogador> [kit]");
+            player.sendMessage(ChatColor.GRAY + "Padrão: qualquer lugar, seus itens. Use [kit] para arena.");
             return true;
         }
 		// Reaproveitar lógica do DuelCommand (instância única no plugin)

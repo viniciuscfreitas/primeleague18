@@ -74,8 +74,8 @@ public class DiscordIntegration {
                         embed.addField("Mudança de ELO", changeStr, true);
                     }
 
-                    // Enviar mensagem
-                    channel.sendMessage(embed.build()).queue();
+                    // Enviar mensagem (usando sendMessageEmbeds para compatibilidade com JDA mais recente)
+                    channel.sendMessageEmbeds(embed.build()).queue();
                 } catch (Exception e) {
                     plugin.getLogger().warning("Erro ao enviar webhook Discord: " + e.getMessage());
                     e.printStackTrace();

@@ -28,7 +28,7 @@ tablist-name-formatting:
 
 # https://github.com/NEZNAMY/TAB/wiki/Feature-guide:-Nametags
 scoreboard-teams:
-  enabled: false
+  enabled: true
   enable-collision: true
   invisible-nametags: false
   sorting-types:

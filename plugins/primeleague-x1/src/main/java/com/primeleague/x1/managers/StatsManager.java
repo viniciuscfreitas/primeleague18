@@ -47,10 +47,6 @@ public class StatsManager {
             return stats;
         }
 
-        public long getTimestamp() {
-            return timestamp;
-        }
-
         public boolean isExpired(long cacheDuration) {
             return System.currentTimeMillis() - timestamp > cacheDuration;
         }

@@ -83,13 +83,13 @@
             <version>1.0.0</version>
             <scope>provided</scope>
         </dependency>
-        <!-- PrimeleagueElo (optional - system scope for compile) -->
+        <!-- PrimeleagueElo (optional - usar JAR do servidor) -->
         <dependency>
             <groupId>com.primeleague</groupId>
             <artifactId>primeleague-elo</artifactId>
             <version>1.0.0</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/../primeleague-elo/target/primeleague-elo-1.0.0.jar</systemPath>
+            <systemPath>${project.basedir}/../../server/plugins/primeleague-elo-1.0.0.jar</systemPath>
             <optional>true</optional>
         </dependency>
         <!-- PrimeleagueDiscord (optional) -->
@@ -100,22 +100,22 @@
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
-        <!-- PrimeleagueStats (optional - system scope for compile) -->
+        <!-- PrimeleagueStats (optional - usar JAR do servidor) -->
         <dependency>
             <groupId>com.primeleague</groupId>
             <artifactId>primeleague-stats</artifactId>
             <version>1.0.0</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/../primeleague-stats/target/primeleague-stats-1.0.0.jar</systemPath>
+            <systemPath>${project.basedir}/../../server/plugins/primeleague-stats-1.0.0.jar</systemPath>
             <optional>true</optional>
         </dependency>
-        <!-- PrimeleagueLeague (softdepend - system scope for compile) -->
+        <!-- PrimeleagueLeague (softdepend - usar JAR do servidor) -->
         <dependency>
             <groupId>com.primeleague</groupId>
             <artifactId>primeleague-league</artifactId>
             <version>1.0.0</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/../primeleague-league/target/primeleague-league-1.0.0.jar</systemPath>
+            <systemPath>${project.basedir}/../../server/plugins/primeleague-league-1.0.0.jar</systemPath>
             <optional>true</optional>
         </dependency>
         <!-- PlaceholderAPI (provided by server) -->

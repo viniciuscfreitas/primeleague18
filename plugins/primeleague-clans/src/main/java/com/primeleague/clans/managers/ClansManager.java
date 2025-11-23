@@ -88,15 +88,9 @@ public class ClansManager {
                     // Buscar clan criado
                     ClanData clan = getClan(clanId);
 
-                    // Criar canais Discord (se disponível)
-                    if (clan != null && plugin.getDiscordIntegration() != null) {
+                    // Criar canais no Discord (async)
+                    if (plugin.getDiscordIntegration() != null) {
                         plugin.getDiscordIntegration().createDiscordChannels(clan);
-                        // Notificar Discord sobre criação do clan
-                        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                            plugin.getDiscordIntegration().notifyDiscord(clan,
-                                "🎉 Novo Clan Criado!",
-                                "O clan **" + clan.getName() + "** (" + clan.getTag() + ") foi criado!");
-                        }, 20L); // Delay 1 segundo para garantir que canais foram criados
                     }
 
                     return clan;
@@ -117,7 +111,7 @@ public class ClansManager {
              PreparedStatement stmt = conn.prepareStatement(
                 "SELECT id, name, tag, tag_clean, leader_uuid, created_at, description, " +
                 "discord_channel_id, discord_role_id, home_world, home_x, home_y, home_z, " +
-                "points, event_wins_count, blocked_from_events " +
+                "points, event_wins_count, blocked_from_events, shield_start_hour, shield_end_hour " +
                 "FROM clans WHERE id = ?")) {
             stmt.setInt(1, clanId);
 
@@ -142,7 +136,7 @@ public class ClansManager {
              PreparedStatement stmt = conn.prepareStatement(
                 "SELECT id, name, tag, tag_clean, leader_uuid, created_at, description, " +
                 "discord_channel_id, discord_role_id, home_world, home_x, home_y, home_z, " +
-                "points, event_wins_count, blocked_from_events " +
+                "points, event_wins_count, blocked_from_events, shield_start_hour, shield_end_hour " +
                 "FROM clans WHERE UPPER(tag_clean) = ?")) {
             stmt.setString(1, tagClean);
 
@@ -166,7 +160,7 @@ public class ClansManager {
              PreparedStatement stmt = conn.prepareStatement(
                 "SELECT c.id, c.name, c.tag, c.tag_clean, c.leader_uuid, c.created_at, c.description, " +
                 "c.discord_channel_id, c.discord_role_id, c.home_world, c.home_x, c.home_y, c.home_z, " +
-                "c.points, c.event_wins_count, c.blocked_from_events " +
+                "c.points, c.event_wins_count, c.blocked_from_events, c.shield_start_hour, c.shield_end_hour " +
                 "FROM clans c JOIN clan_members cm ON c.id = cm.clan_id " +
                 "WHERE cm.player_uuid = ?")) {
             stmt.setObject(1, playerUuid);
@@ -200,31 +194,6 @@ public class ClansManager {
              PreparedStatement stmt = conn.prepareStatement(
                 "INSERT INTO clan_members (clan_id, player_uuid, role, joined_at) " +
                 "VALUES (?, ?, ?, ?) ON CONFLICT (clan_id, player_uuid) DO NOTHING")) {
-            stmt.setInt(1, clanId);
-            stmt.setObject(2, playerUuid);
-            stmt.setString(3, role);
-            stmt.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
-
-            int rows = stmt.executeUpdate();
-            if (rows > 0) {
-                // Notificar Discord (se disponível)
-                ClanData clan = getClan(clanId);
-                if (clan != null && plugin.getDiscordIntegration() != null) {
-                    com.primeleague.core.models.PlayerData playerData = CoreAPI.getPlayer(playerUuid);
-                    String playerName = playerData != null ? playerData.getName() : "Desconhecido";
-                    plugin.getDiscordIntegration().notifyDiscord(clan,
-                        "👤 Novo Membro",
-                        "**" + playerName + "** entrou no clan!");
-                }
-            }
-            return rows > 0;
-        } catch (SQLException e) {
-            plugin.getLogger().severe("Erro ao adicionar membro: " + e.getMessage());
-            return false;
-        }
-    }
-
-    /**
      * Remove membro do clan
      */
     public boolean removeMember(int clanId, UUID playerUuid) {
@@ -443,6 +412,16 @@ public class ClansManager {
             clan.setBlockedFromEvents(blockedFromEvents);
         }
 
+        // Shield
+        int shieldStart = rs.getInt("shield_start_hour");
+        if (!rs.wasNull()) {
+            clan.setShieldStartHour(shieldStart);
+        }
+        int shieldEnd = rs.getInt("shield_end_hour");
+        if (!rs.wasNull()) {
+            clan.setShieldEndHour(shieldEnd);
+        }
+
         return clan;
     }
 
@@ -608,6 +587,24 @@ public class ClansManager {
     }
 
     /**
+     * Define horário do shield do clan
+     */
+    public boolean setClanShield(int clanId, int startHour, int endHour) {
+        try (Connection conn = CoreAPI.getDatabase().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                "UPDATE clans SET shield_start_hour = ?, shield_end_hour = ? WHERE id = ?")) {
+            stmt.setInt(1, startHour);
+            stmt.setInt(2, endHour);
+            stmt.setInt(3, clanId);
+            int rows = stmt.executeUpdate();
+            return rows > 0;
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Erro ao definir shield do clan: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Calcula ELO médio do clan em tempo real (com cache TTL 30s)
      * Grug Brain: Query direta, cache para performance
      */
@@ -683,6 +680,7 @@ public class ClansManager {
             plugin.invalidateTopCache("points");
 
             // Notificar Discord async
+            /*
             if (plugin.getDiscordIntegration() != null) {
                 ClanData updatedClan = getClan(clanId);
                 if (updatedClan != null) {
@@ -691,6 +689,7 @@ public class ClansManager {
                     });
                 }
             }
+            */
 
             plugin.getLogger().info("[CLAN WIN] Clan " + clan.getName() + " ganhou evento " + eventName + " (+" + points + " pontos)");
             return true;
@@ -933,11 +932,13 @@ public class ClansManager {
             plugin.invalidateAlertCache(clanId);
 
             // Notificar Discord async
+            /*
             if (plugin.getDiscordIntegration() != null) {
                 plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
                     plugin.getDiscordIntegration().notifyDiscordAlert(clan, alertType, message, playerUuid);
                 });
             }
+            */
 
             // Notificar membros online do clan (thread principal via scheduler)
             if (plugin.getConfig().getBoolean("alerts.auto-notify-online", true)) {
@@ -1142,45 +1143,22 @@ public class ClansManager {
             // Obter pontos atuais
             int currentPoints = getClanPoints(clanId);
 
-            // Calcular pontos corretos (histórico - pontos removidos por alertas)
-            int correctPoints = historicalPoints - pointsToRemove;
+            // Pontos esperados = histórico - penalidades
+            int expectedPoints = historicalPoints - pointsToRemove;
 
-            // Se pontos atuais > pontos corretos, remover diferença (pode ficar negativo)
-            if (currentPoints > correctPoints) {
-                int diff = currentPoints - correctPoints;
+            // Se pontos atuais != pontos esperados, atualizar
+            if (currentPoints != expectedPoints) {
                 try (PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE clans SET points = points - ? WHERE id = ?")) {
-                    stmt.setInt(1, diff);
+                    "UPDATE clans SET points = ? WHERE id = ?")) {
+                    stmt.setInt(1, expectedPoints);
                     stmt.setInt(2, clanId);
                     stmt.executeUpdate();
                 }
-            } else if (currentPoints < correctPoints) {
-                // Se pontos atuais < pontos corretos, adicionar diferença (pode acontecer se alerta foi removido)
-                int diff = correctPoints - currentPoints;
-                try (PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE clans SET points = points + ? WHERE id = ?")) {
-                    stmt.setInt(1, diff);
-                    stmt.setInt(2, clanId);
-                    stmt.executeUpdate();
-                }
+                // Invalidar cache de ranking
+                plugin.invalidateTopCache("points");
             }
-
-            // 5. Verificar config: alerts.block-threshold
-            int blockThreshold = plugin.getConfig().getInt("alerts.block-threshold", 10);
-
-            // 6. Se alertCount >= blockThreshold, bloquear clan de eventos
-            try (PreparedStatement stmt = conn.prepareStatement(
-                "UPDATE clans SET blocked_from_events = ? WHERE id = ?")) {
-                stmt.setBoolean(1, alertCount >= blockThreshold);
-                stmt.setInt(2, clanId);
-                stmt.executeUpdate();
-            }
-
-            // Invalidar cache de ranking
-            plugin.invalidateTopCache("points");
         } catch (SQLException e) {
             plugin.getLogger().severe("Erro ao aplicar penalidades: " + e.getMessage());
         }
     }
 }
-

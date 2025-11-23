@@ -77,32 +77,5 @@
             <version>1.0.0</version>
             <scope>provided</scope>
         </dependency>
-
-        <!-- PrimeLeague Clans -->
-        <dependency>
-            <groupId>com.primeleague</groupId>
-            <artifactId>primeleague-clans</artifactId>
-            <version>1.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/../primeleague-clans/target/primeleague-clans-1.0.0.jar</systemPath>
-        </dependency>
-
-        <!-- PrimeLeague Economy -->
-        <dependency>
-            <groupId>com.primeleague</groupId>
-            <artifactId>primeleague-economy</artifactId>
-            <version>1.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/../primeleague-economy/target/primeleague-economy-1.0.0.jar</systemPath>
-        </dependency>
-        
-        <!-- PrimeLeague League -->
-        <dependency>
-            <groupId>com.primeleague</groupId>
-            <artifactId>primeleague-league</artifactId>
-            <version>1.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/../primeleague-league/target/primeleague-league-1.0.0.jar</systemPath>
-        </dependency>
     </dependencies>
 </project>

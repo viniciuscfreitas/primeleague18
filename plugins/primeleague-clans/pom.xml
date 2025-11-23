@@ -87,23 +87,17 @@
             <version>1.0.0</version>
             <scope>provided</scope>
         </dependency>
-        <!-- PrimeleagueDiscord (optional for casting) -->
+        <!-- PrimeleagueDiscord (system scope for compile - softdepend) -->
         <dependency>
             <groupId>com.primeleague</groupId>
             <artifactId>primeleague-discord</artifactId>
             <version>1.0.0</version>
-            <scope>provided</scope>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../primeleague-discord/target/primeleague-discord-1.0.0.jar</systemPath>
             <optional>true</optional>
         </dependency>
-        <!-- Economy (provided by server) -->
-        <dependency>
-            <groupId>com.primeleague</groupId>
-            <artifactId>primeleague-economy</artifactId>
-            <version>1.0.0</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/../primeleague-economy/target/primeleague-economy-1.0.0.jar</systemPath>
-        </dependency>
-        <!-- PlaceholderAPI (provided by server) -->
+        
+        <!-- PlaceholderAPI -->
         <dependency>
             <groupId>me.clip</groupId>
             <artifactId>placeholderapi</artifactId>
