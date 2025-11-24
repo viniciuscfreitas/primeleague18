@@ -1,220 +1,70 @@
 # ============================================
-# PrimeLeague Server - .gitignore
+# PrimeLeague Server - .gitignore (Versão Simplificada)
 # ============================================
-# Mantém no repositório:
-# - Código fonte (.java)
-# - Configurações (pom.xml, plugin.yml, config.yml, server.properties, etc.)
-# - Scripts (start.sh, start.bat, deploy-*.sh, deploy-*.ps1)
-# - Documentação (.md)
-# - docker-compose.yml, minecraft.service, jdk8.txt, eula.txt
+# Foco: Ignorar apenas o essencial (build artifacts, logs, cache)
+# Tudo mais será commitado por padrão
 # ============================================
 
 # ============================================
-# Maven - Build artifacts
+# Maven - Build artifacts (ESSENCIAL)
 # ============================================
 target/
 **/target/
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
-dependency-reduced-pom.xml
-buildNumber.properties
-.mvn/timing.properties
-.mvn/wrapper/maven-wrapper.jar
-
-# Compiled classes and JARs
 *.class
-# *.jar
-!original-*.jar
-
-# Maven wrapper (opcional, pode ser commitado se necessário)
-# .mvn/wrapper/maven-wrapper.properties
 
 # ============================================
-# Minecraft Server - Runtime files
+# Logs (ESSENCIAL)
 # ============================================
-
-# Nota: Mundos (world/, world_nether/, world_the_end/) são MANTIDOS no repositório
-# pois contêm construções importantes
-
-# Apenas arquivos temporários de lock são ignorados
-session.lock
-
-# Server runtime files (gerados automaticamente)
-usercache.json
-ops.json
-banned-players.json
-banned-ips.json
-whitelist.json
-
-# Logs
 logs/
 **/logs/
 *.log
 *.log.gz
-gc.log
-**/*.log
-**/*.log.gz
 
-# Cache
+# ============================================
+# Cache (ESSENCIAL)
+# ============================================
 cache/
 **/cache/
 
-# Paper/Spigot JAR (deve ser baixado separadamente)
-paper-*.jar
-spigot-*.jar
-craftbukkit-*.jar
-server.jar
-
 # ============================================
-# IDE - Development tools
-# ============================================
-.idea/
-*.iml
-.vscode/
-.classpath
-.project
-.settings/
-*.swp
-*.swo
-*~
-*.sublime-project
-*.sublime-workspace
-
-# Eclipse
-.metadata
-bin/
-tmp/
-*.tmp
-*.bak
-*.log
-.loadpath
-.recommenders
-
-# IntelliJ IDEA
-out/
-*.iws
-*.ipr
-*.iml
-.idea_modules/
-
-# NetBeans
-nbproject/private/
-build/
-nbbuild/
-dist/
-nbdist/
-.nb-gradle/
-
-# VS Code
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# ============================================
-# OS - System files
+# Arquivos temporários do sistema (ESSENCIAL)
 # ============================================
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 desktop.ini
 $RECYCLE.BIN/
-*.lnk
-
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
-
-# Linux
-*~
-.directory
-.Trash-*
-
-# ============================================
-# Temporary files
-# ============================================
-*.tmp
-*.temp
-*.bak
-*.backup
 *.swp
 *.swo
 *~
 .#*
 
 # ============================================
-# Secrets and sensitive data
+# IDE - Apenas o essencial
 # ============================================
-# Nota: config.yml são mantidos como templates
-# Tokens sensíveis devem ser removidos antes do commit
+.idea/
+*.iml
+.vscode/
+.settings/
+bin/
+out/
 
-# Arquivos de ambiente
+# ============================================
+# Secrets - Arquivos sensíveis (IMPORTANTE)
+# ============================================
 .env
 .env.local
-.env.*.local
 *.key
 *.pem
 *.p12
 *.jks
 
 # ============================================
-# Build and deployment artifacts
+# Nota: TUDO MAIS SERÁ COMMITADO
 # ============================================
-*.war
-*.ear
-*.sar
-*.rar
-*.zip
-*.tar.gz
-*.tar
-*.gz
-
-# ============================================
-# Database files (se houver)
-# ============================================
-*.db
-*.sqlite
-*.sqlite3
-
-# ============================================
-# Node modules (se houver scripts Node.js)
-# ============================================
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# ============================================
-# Python (se houver scripts Python)
-# ============================================
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-ENV/
-.venv
-
-# ============================================
-# Notas importantes
-# ============================================
-# Os seguintes arquivos SÃO commitados (não ignorados):
-# - Código fonte: *.java
-# - Configurações: pom.xml, plugin.yml, config.yml, server.properties, etc.
-# - Scripts: start.sh, start.bat, deploy-*.sh, deploy-*.ps1, upload-*.ps1
-# - Documentação: *.md
-# - Docker: docker-compose.yml, minecraft.service
-# - Configuração: jdk8.txt, eula.txt
-# - Mundos do Minecraft: world/, world_nether/, world_the_end/ (contêm construções)
+# Incluindo:
+# - *.java (código fonte)
+# - *.yml, *.xml, pom.xml (configurações)
+# - *.jar (JARs compilados - se quiser commitar)
+# - *.md (documentação)
+# - world/ (mundos do Minecraft)
+# - Qualquer outro arquivo não listado acima

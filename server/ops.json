@@ -1,0 +1,20 @@
+[
+  {
+    "uuid": "1f79c30e-40d8-360d-89ba-67938f455e1b",
+    "name": "Freitas",
+    "level": 4,
+    "bypassesPlayerLimit": false
+  },
+  {
+    "uuid": "cfae741c-a345-34fa-b8f4-91989c6a4aec",
+    "name": "Bilau",
+    "level": 4,
+    "bypassesPlayerLimit": false
+  },
+  {
+    "uuid": "3e556f49-c226-3253-8408-9824b21a6d6a",
+    "name": "vinicff",
+    "level": 4,
+    "bypassesPlayerLimit": false
+  }
+]
