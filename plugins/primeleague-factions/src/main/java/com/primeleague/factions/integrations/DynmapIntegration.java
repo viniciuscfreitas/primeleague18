@@ -45,8 +45,13 @@ public class DynmapIntegration {
 
             // Obter MarkerAPI via reflection
             java.lang.reflect.Method getMarkerAPIMethod = dynmapAPI.getClass().getMethod("getMarkerAPI");
-            getMarkerAPIMethod.setAccessible(true);
-            markerAPI = getMarkerAPIMethod.invoke(dynmapAPI);
+            try {
+                markerAPI = getMarkerAPIMethod.invoke(dynmapAPI);
+            } catch (Exception e) {
+                // Se falhar, tentar com setAccessible (problema de classloader)
+                getMarkerAPIMethod.setAccessible(true);
+                markerAPI = getMarkerAPIMethod.invoke(dynmapAPI);
+            }
 
             if (markerAPI == null) {
                 plugin.getLogger().warning("Dynmap MarkerAPI não disponível");
@@ -55,20 +60,32 @@ public class DynmapIntegration {
 
             // Criar MarkerSet para claims via reflection
             java.lang.reflect.Method getMarkerSetMethod = markerAPI.getClass().getMethod("getMarkerSet", String.class);
-            getMarkerSetMethod.setAccessible(true);
-            markerSet = getMarkerSetMethod.invoke(markerAPI, "primeleague.claims");
+            try {
+                markerSet = getMarkerSetMethod.invoke(markerAPI, "primeleague.claims");
+            } catch (Exception e) {
+                getMarkerSetMethod.setAccessible(true);
+                markerSet = getMarkerSetMethod.invoke(markerAPI, "primeleague.claims");
+            }
 
             if (markerSet == null) {
                 // Criar novo MarkerSet
                 java.lang.reflect.Method createMarkerSetMethod = markerAPI.getClass().getMethod(
                     "createMarkerSet", String.class, String.class, java.util.Set.class, boolean.class);
-                createMarkerSetMethod.setAccessible(true);
-                markerSet = createMarkerSetMethod.invoke(markerAPI, "primeleague.claims", "Territórios", null, false);
+                try {
+                    markerSet = createMarkerSetMethod.invoke(markerAPI, "primeleague.claims", "Territórios", null, false);
+                } catch (Exception e) {
+                    createMarkerSetMethod.setAccessible(true);
+                    markerSet = createMarkerSetMethod.invoke(markerAPI, "primeleague.claims", "Territórios", null, false);
+                }
             } else {
                 // Atualizar label
                 java.lang.reflect.Method setLabelMethod = markerSet.getClass().getMethod("setMarkerSetLabel", String.class);
-                setLabelMethod.setAccessible(true);
-                setLabelMethod.invoke(markerSet, "Territórios");
+                try {
+                    setLabelMethod.invoke(markerSet, "Territórios");
+                } catch (Exception e) {
+                    setLabelMethod.setAccessible(true);
+                    setLabelMethod.invoke(markerSet, "Territórios");
+                }
             }
 
             if (markerSet == null) {
@@ -141,37 +158,45 @@ public class DynmapIntegration {
                             String.class, String.class, boolean.class, String.class,
                             double[].class, double[].class, boolean.class
                         );
-                        createAreaMarkerMethod.setAccessible(true); // Permitir acesso a métodos
-                        Object marker = createAreaMarkerMethod.invoke(
-                            markerSet,
-                            markerId,
-                            clan.getName(),
-                            false,
-                            world.getName(),
-                            xCoords,
-                            zCoords,
-                            false
-                        );
+                        Object marker;
+                        try {
+                            marker = createAreaMarkerMethod.invoke(
+                                markerSet, markerId, clan.getName(), false, world.getName(), xCoords, zCoords, false);
+                        } catch (Exception e) {
+                            // Se falhar, tentar com setAccessible (problema de classloader)
+                            createAreaMarkerMethod.setAccessible(true);
+                            marker = createAreaMarkerMethod.invoke(
+                                markerSet, markerId, clan.getName(), false, world.getName(), xCoords, zCoords, false);
+                        }
 
                         if (marker != null) {
                             // Configurar cor e opacidade via reflection
                             java.lang.reflect.Method setLineStyleMethod = marker.getClass().getMethod(
-                                "setLineStyle", int.class, double.class, int.class
-                            );
-                            setLineStyleMethod.setAccessible(true);
-                            setLineStyleMethod.invoke(marker, 2, 1.0, colorInt); // Borda
+                                "setLineStyle", int.class, double.class, int.class);
+                            try {
+                                setLineStyleMethod.invoke(marker, 2, 1.0, colorInt); // Borda
+                            } catch (Exception e) {
+                                setLineStyleMethod.setAccessible(true);
+                                setLineStyleMethod.invoke(marker, 2, 1.0, colorInt);
+                            }
 
                             java.lang.reflect.Method setFillStyleMethod = marker.getClass().getMethod(
-                                "setFillStyle", double.class, int.class
-                            );
-                            setFillStyleMethod.setAccessible(true);
-                            setFillStyleMethod.invoke(marker, 0.3, colorInt); // Preenchimento
+                                "setFillStyle", double.class, int.class);
+                            try {
+                                setFillStyleMethod.invoke(marker, 0.3, colorInt); // Preenchimento
+                            } catch (Exception e) {
+                                setFillStyleMethod.setAccessible(true);
+                                setFillStyleMethod.invoke(marker, 0.3, colorInt);
+                            }
 
                             java.lang.reflect.Method setDescriptionMethod = marker.getClass().getMethod(
-                                "setDescription", String.class
-                            );
-                            setDescriptionMethod.setAccessible(true);
-                            setDescriptionMethod.invoke(marker, "§6Clã: §e" + clan.getName() + "§7 (" + clan.getTag() + ")");
+                                "setDescription", String.class);
+                            try {
+                                setDescriptionMethod.invoke(marker, "§6Clã: §e" + clan.getName() + "§7 (" + clan.getTag() + ")");
+                            } catch (Exception e) {
+                                setDescriptionMethod.setAccessible(true);
+                                setDescriptionMethod.invoke(marker, "§6Clã: §e" + clan.getName() + "§7 (" + clan.getTag() + ")");
+                            }
 
                             // Cache do marker (thread-safe)
                             claimMarkers.put(chunk, marker);
@@ -202,8 +227,12 @@ public class DynmapIntegration {
             plugin.getServer().getScheduler().runTask(plugin, () -> {
                 try {
                     java.lang.reflect.Method deleteMarkerMethod = marker.getClass().getMethod("deleteMarker");
-                    deleteMarkerMethod.setAccessible(true);
-                    deleteMarkerMethod.invoke(marker);
+                    try {
+                        deleteMarkerMethod.invoke(marker);
+                    } catch (Exception e) {
+                        deleteMarkerMethod.setAccessible(true);
+                        deleteMarkerMethod.invoke(marker);
+                    }
                 } catch (Exception e) {
                     plugin.getLogger().warning("Erro ao remover marker do Dynmap: " + e.getMessage());
                 }
@@ -241,8 +270,12 @@ public class DynmapIntegration {
                 for (Object marker : markersToDelete) {
                     try {
                         java.lang.reflect.Method deleteMarkerMethod = marker.getClass().getMethod("deleteMarker");
-                        deleteMarkerMethod.setAccessible(true);
-                        deleteMarkerMethod.invoke(marker);
+                        try {
+                            deleteMarkerMethod.invoke(marker);
+                        } catch (Exception e) {
+                            deleteMarkerMethod.setAccessible(true);
+                            deleteMarkerMethod.invoke(marker);
+                        }
                     } catch (Exception e) {
                         plugin.getLogger().warning("Erro ao remover marker do clã: " + e.getMessage());
                     }
@@ -289,8 +322,12 @@ public class DynmapIntegration {
         if (markerSet != null) {
             try {
                 java.lang.reflect.Method deleteMarkerSetMethod = markerSet.getClass().getMethod("deleteMarkerSet");
-                deleteMarkerSetMethod.setAccessible(true);
-                deleteMarkerSetMethod.invoke(markerSet);
+                try {
+                    deleteMarkerSetMethod.invoke(markerSet);
+                } catch (Exception e) {
+                    deleteMarkerSetMethod.setAccessible(true);
+                    deleteMarkerSetMethod.invoke(markerSet);
+                }
             } catch (Exception e) {
                 plugin.getLogger().warning("Erro ao limpar MarkerSet: " + e.getMessage());
             }
