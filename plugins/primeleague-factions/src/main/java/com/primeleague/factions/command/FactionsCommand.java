@@ -54,6 +54,9 @@ public class FactionsCommand implements CommandExecutor {
             case "fly":
                 plugin.getFlyManager().toggleFly(player);
                 break;
+            case "upgrade":
+                handleUpgrade(player);
+                break;
             default:
                 sendHelp(player);
                 break;
@@ -69,6 +72,26 @@ public class FactionsCommand implements CommandExecutor {
         player.sendMessage("§6/f map §f- Ver mapa de territórios.");
         player.sendMessage("§6/f power §f- Ver seu poder.");
         player.sendMessage("§6/f fly §f- Ativar/Desativar voo em território.");
+        player.sendMessage("§6/f upgrade §f- Abrir menu de upgrades.");
+    }
+
+    private void handleUpgrade(Player player) {
+        com.primeleague.clans.models.ClanData clan = plugin.getClansPlugin().getClansManager().getClanByMember(player.getUniqueId());
+        if (clan == null) {
+            player.sendMessage("§cVocê precisa de um clã.");
+            return;
+        }
+
+        // Verificar permissões (Leader ou Officer apenas)
+        String role = plugin.getClansPlugin().getClansManager().getMemberRole(clan.getId(), player.getUniqueId());
+        if (role == null || (!role.equals("LEADER") && !role.equals("OFFICER"))) {
+            player.sendMessage("§cApenas líderes e oficiais podem gerenciar upgrades!");
+            return;
+        }
+
+        // Abrir GUI de upgrades
+        org.bukkit.inventory.Inventory gui = plugin.getUpgradeManager().createUpgradeGUI(player, clan.getId());
+        player.openInventory(gui);
     }
 
     private void handleClaim(Player player, String[] args) {

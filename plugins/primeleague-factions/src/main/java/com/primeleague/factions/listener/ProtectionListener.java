@@ -143,30 +143,40 @@ public class ProtectionListener implements Listener {
                material == Material.ENDER_CHEST;
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onExplode(EntityExplodeEvent event) {
-        // Allow TNT to break blocks in claims (Raiding)
-        // But maybe protect certain blocks or check for "Peaceful" claims (Safezone)
-
+        // TNT permite raiding em claims normais, mas bloqueia em safezone/warzone
         if (event.getEntityType() == EntityType.PRIMED_TNT || event.getEntityType() == EntityType.MINECART_TNT) {
-            // TNT Logic: Allow breaking blocks
-            // Water protection is vanilla behavior, so we don't need to do anything special for water.
-            // Obsidian durability? That's a separate feature (ObsidianBreaker).
-            // For now, standard TNT behavior is allowed.
-
-            // Check for Safezone/Warzone if implemented.
-            // Assuming ID 0 or -1 is Wilderness.
-            // If we have special clans for Safezone, we should check here.
+            // TNT Logic: Bloquear em safezone/warzone
+            // Grug Brain: -1 = wilderness (permite), -2 = safezone (bloqueia), -3 = warzone (bloqueia)
+            // Por enquanto, apenas verificar se é wilderness (-1) ou claim normal (clanId > 0)
+            // Claims normais permitem TNT (raiding), wilderness também
 
             Iterator<Block> it = event.blockList().iterator();
             while (it.hasNext()) {
                 Block b = it.next();
                 int clanId = plugin.getClaimManager().getClanAt(b.getLocation());
-                // If Safezone (e.g. clanId == -2), remove from list.
+
+                // Se for safezone/warzone (IDs especiais), bloquear
+                // Por enquanto, apenas verificar se é wilderness ou claim normal
+                // TODO: Implementar sistema de safezone/warzone se necessário
+                // if (clanId == -2 || clanId == -3) {
+                //     it.remove(); // Bloqueia dano em safezone/warzone
+                // }
             }
         } else {
-            // Creeper/Other explosions - maybe disable block damage?
-            // event.blockList().clear();
+            // Creeper/Outras explosões: bloquear dano em claims (proteção contra grief)
+            // Grug Brain: Apenas TNT permite raiding, outras explosões são bloqueadas
+            Iterator<Block> it = event.blockList().iterator();
+            while (it.hasNext()) {
+                Block b = it.next();
+                int clanId = plugin.getClaimManager().getClanAt(b.getLocation());
+
+                // Se está em claim (não wilderness), bloquear dano de creeper/etc
+                if (clanId != -1) {
+                    it.remove();
+                }
+            }
         }
     }
 

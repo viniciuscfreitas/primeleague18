@@ -11,6 +11,7 @@ import com.primeleague.factions.listener.ProtectionListener;
 import com.primeleague.factions.manager.ClaimManager;
 import com.primeleague.factions.manager.FlyManager;
 import com.primeleague.factions.manager.PowerManager;
+import com.primeleague.factions.manager.UpgradeManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -26,6 +27,7 @@ public class PrimeFactions extends JavaPlugin {
     private DiscordIntegration discordIntegration;
     private DynmapIntegration dynmapIntegration;
     private FlyManager flyManager;
+    private UpgradeManager upgradeManager;
 
     @Override
     public void onEnable() {
@@ -55,6 +57,7 @@ public class PrimeFactions extends JavaPlugin {
         this.discordIntegration = new DiscordIntegration(this);
         this.dynmapIntegration = new DynmapIntegration(this);
         this.flyManager = new FlyManager(this);
+        this.upgradeManager = new UpgradeManager(this);
 
         // 4.1. Setup Dynmap Integration (soft dependency)
         this.dynmapIntegration.setup();
@@ -64,6 +67,7 @@ public class PrimeFactions extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ProtectionListener(this), this);
         getServer().getPluginManager().registerEvents(new GenBucketListener(this), this);
         getServer().getPluginManager().registerEvents(new FlyListener(this), this);
+        getServer().getPluginManager().registerEvents(new com.primeleague.factions.listener.UpgradeGUIListener(this), this);
 
         // 6. Register Commands
         getCommand("f").setExecutor(new FactionsCommand(this));
@@ -87,6 +91,12 @@ public class PrimeFactions extends JavaPlugin {
         if (dynmapIntegration != null) {
             dynmapIntegration.cleanup();
         }
+
+        // Salvar solo builds no banco
+        if (claimManager != null) {
+            claimManager.saveSoloBuilds();
+        }
+
         getLogger().info("PrimeleagueFactions desabilitado.");
     }
 
@@ -116,6 +126,10 @@ public class PrimeFactions extends JavaPlugin {
 
     public DynmapIntegration getDynmapIntegration() {
         return dynmapIntegration;
+    }
+
+    public UpgradeManager getUpgradeManager() {
+        return upgradeManager;
     }
 
     private void setupDatabase() {
@@ -159,6 +173,20 @@ public class PrimeFactions extends JavaPlugin {
                     "extra_shield_hours INT DEFAULT 0, " +
                     "FOREIGN KEY (clan_id) REFERENCES clans(id) ON DELETE CASCADE" +
                     ")");
+
+            // 5. Solo Builds Table
+            stmt.execute("CREATE TABLE IF NOT EXISTS solo_builds (" +
+                    "world VARCHAR(50) NOT NULL, " +
+                    "x INT NOT NULL, " +
+                    "z INT NOT NULL, " +
+                    "owner_uuid VARCHAR(36) NOT NULL, " +
+                    "PRIMARY KEY (world, x, z)" +
+                    ")");
+
+            // 6. Index for solo builds lookups
+            try {
+                stmt.execute("CREATE INDEX idx_solo_builds_owner ON solo_builds(owner_uuid)");
+            } catch (SQLException ignored) {}
 
             getLogger().info("Banco de dados configurado com sucesso.");
 

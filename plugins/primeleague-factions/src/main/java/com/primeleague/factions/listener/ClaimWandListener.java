@@ -95,12 +95,10 @@ public class ClaimWandListener implements Listener {
         }
 
         // Check Role (Leader/Mod only)
-        // Assuming ClanMember has role info.
-        // For simplicity in this iteration, let's allow any member or check leader.
-        if (!clan.getLeaderUuid().equals(uuid)) {
-             // TODO: Check for moderator role properly
-             // player.sendMessage(ChatColor.RED + "Apenas líderes e moderadores podem claimar!");
-             // return;
+        String role = plugin.getClansPlugin().getClansManager().getMemberRole(clan.getId(), uuid);
+        if (role == null || (!role.equals("LEADER") && !role.equals("OFFICER"))) {
+            player.sendMessage(ChatColor.RED + "Apenas líderes e oficiais podem claimar territórios!");
+            return;
         }
 
         // Calculate Chunks
@@ -110,6 +108,13 @@ public class ClaimWandListener implements Listener {
         int maxZ = Math.max(pos1.getChunk().getZ(), pos2.getChunk().getZ());
 
         int chunksToClaim = (maxX - minX + 1) * (maxZ - minZ + 1);
+
+        // Limite máximo de chunks por claim (evita abuso)
+        int maxChunksPerClaim = plugin.getConfig().getInt("claims.max-chunks-per-claim", 100);
+        if (chunksToClaim > maxChunksPerClaim) {
+            player.sendMessage(ChatColor.RED + "Área muito grande! Máximo: " + maxChunksPerClaim + " chunks por vez.");
+            return;
+        }
 
         // Validar mundo permitido
         String worldName = pos1.getWorld().getName();
@@ -130,6 +135,25 @@ public class ClaimWandListener implements Listener {
 
             // Voltar para main thread para claimar e enviar mensagens
             plugin.getServer().getScheduler().runTask(plugin, () -> {
+                // Verificar se player ainda está online (pode ter saído durante async)
+                if (player == null || !player.isOnline()) {
+                    return;
+                }
+
+                // Verificar se clã ainda existe e player ainda está nele (pode ter sido deletado/removido durante async)
+                com.primeleague.clans.models.ClanData currentClan = plugin.getClansPlugin().getClansManager().getClanByMember(player.getUniqueId());
+                if (currentClan == null || currentClan.getId() != finalClanId) {
+                    player.sendMessage(ChatColor.RED + "Seu clã não existe mais ou você foi removido.");
+                    return;
+                }
+
+                // Verificar role novamente (pode ter mudado durante async)
+                String currentRole = plugin.getClansPlugin().getClansManager().getMemberRole(finalClanId, player.getUniqueId());
+                if (currentRole == null || (!currentRole.equals("LEADER") && !currentRole.equals("OFFICER"))) {
+                    player.sendMessage(ChatColor.RED + "Você não tem mais permissão para claimar territórios!");
+                    return;
+                }
+
                 if (maxClaims > 0 && currentClaims >= maxClaims) {
                     player.sendMessage(ChatColor.RED + "Clã sem power suficiente! Máximo: " + maxClaims + " claims (Power total: " + String.format("%.1f", totalPower) + ")");
                     return;

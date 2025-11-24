@@ -39,6 +39,7 @@ public class ClaimManager {
         this.soloBuildCache = new ConcurrentHashMap<>();
         this.clanClaimCount = new ConcurrentHashMap<>();
         loadClaims();
+        loadSoloBuilds(); // Carregar solo builds após claims
     }
 
     /**
@@ -281,13 +282,29 @@ public class ClaimManager {
 
     /**
      * Rastreia chunk onde solo player buildou
-     * Grug Brain: Cache em memória, sem DB (simples e direto)
+     * Grug Brain: Cache em memória + DB (persistência)
      */
     public void trackSoloBuild(String world, int x, int z, UUID playerUuid) {
         ChunkKey key = new ChunkKey(world, x, z);
         // Só rastreia se chunk não está claimado
         if (!claimCache.containsKey(key)) {
             soloBuildCache.put(key, playerUuid);
+
+            // Salvar no banco async (não bloqueia)
+            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+                try (Connection conn = CoreAPI.getDatabase().getConnection();
+                     PreparedStatement stmt = conn.prepareStatement(
+                        "INSERT INTO solo_builds (world, x, z, owner_uuid) VALUES (?, ?, ?, ?) " +
+                        "ON CONFLICT (world, x, z) DO UPDATE SET owner_uuid = EXCLUDED.owner_uuid")) {
+                    stmt.setString(1, world);
+                    stmt.setInt(2, x);
+                    stmt.setInt(3, z);
+                    stmt.setString(4, playerUuid.toString());
+                    stmt.executeUpdate();
+                } catch (SQLException e) {
+                    plugin.getLogger().log(Level.WARNING, "Erro ao salvar solo build no banco", e);
+                }
+            });
         }
     }
 
@@ -335,10 +352,14 @@ public class ClaimManager {
                 claimedCount++;
                 // Remove do cache de solo builds (agora é claim do clan)
                 soloBuildCache.remove(chunkKey);
+                // Remove do banco também
+                removeSoloBuild(chunkKey);
             } else {
                 // Se claimChunk retornou false, chunk foi claimado por outro processo (race condition rara)
                 skippedCount++;
                 soloBuildCache.remove(chunkKey);
+                // Remove do banco também
+                removeSoloBuild(chunkKey);
             }
         }
 
@@ -351,6 +372,93 @@ public class ClaimManager {
     public int autoClaimSoloBuilds(UUID playerUuid, int clanId) {
         int[] result = autoClaimSoloBuilds(playerUuid, clanId, 0); // 0 = sem limite
         return result[0];
+    }
+
+    /**
+     * Carrega solo builds do banco no startup
+     * Grug Brain: Carrega todos os builds solo do banco para cache
+     */
+    public void loadSoloBuilds() {
+        plugin.getLogger().info("Carregando solo builds...");
+        int count = 0;
+        try (Connection conn = CoreAPI.getDatabase().getConnection();
+             PreparedStatement stmt = conn.prepareStatement("SELECT world, x, z, owner_uuid FROM solo_builds")) {
+
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                String world = rs.getString("world");
+                int x = rs.getInt("x");
+                int z = rs.getInt("z");
+                UUID ownerUuid = UUID.fromString(rs.getString("owner_uuid"));
+
+                ChunkKey key = new ChunkKey(world, x, z);
+                // Só adiciona ao cache se não está claimado
+                if (!claimCache.containsKey(key)) {
+                    soloBuildCache.put(key, ownerUuid);
+                    count++;
+                }
+            }
+            plugin.getLogger().info("Carregados " + count + " solo builds.");
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Erro ao carregar solo builds!", e);
+        }
+    }
+
+    /**
+     * Salva todos os solo builds do cache no banco (chamado no onDisable)
+     * Grug Brain: Batch insert para performance
+     */
+    public void saveSoloBuilds() {
+        if (soloBuildCache.isEmpty()) {
+            return;
+        }
+
+        plugin.getLogger().info("Salvando " + soloBuildCache.size() + " solo builds...");
+            try (Connection conn = CoreAPI.getDatabase().getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(
+                    "INSERT INTO solo_builds (world, x, z, owner_uuid) VALUES (?, ?, ?, ?) " +
+                    "ON CONFLICT (world, x, z) DO UPDATE SET owner_uuid = EXCLUDED.owner_uuid")) {
+
+            int count = 0;
+            for (Map.Entry<ChunkKey, UUID> entry : soloBuildCache.entrySet()) {
+                ChunkKey key = entry.getKey();
+                UUID ownerUuid = entry.getValue();
+
+                stmt.setString(1, key.getWorld());
+                stmt.setInt(2, key.getX());
+                stmt.setInt(3, key.getZ());
+                stmt.setString(4, ownerUuid.toString());
+                stmt.addBatch();
+                count++;
+
+                // Executar batch a cada 100 inserts
+                if (count % 100 == 0) {
+                    stmt.executeBatch();
+                }
+            }
+            stmt.executeBatch(); // Executar restante
+            plugin.getLogger().info("Salvos " + count + " solo builds.");
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Erro ao salvar solo builds!", e);
+        }
+    }
+
+    /**
+     * Remove solo build do banco (quando é claimado ou player entra em clan)
+     */
+    private void removeSoloBuild(ChunkKey key) {
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try (Connection conn = CoreAPI.getDatabase().getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(
+                    "DELETE FROM solo_builds WHERE world = ? AND x = ? AND z = ?")) {
+                stmt.setString(1, key.getWorld());
+                stmt.setInt(2, key.getX());
+                stmt.setInt(3, key.getZ());
+                stmt.executeUpdate();
+            } catch (SQLException e) {
+                plugin.getLogger().log(Level.WARNING, "Erro ao remover solo build do banco", e);
+            }
+        });
     }
 }
 
