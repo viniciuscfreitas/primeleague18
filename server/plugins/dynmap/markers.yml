@@ -1,6 +1,19 @@
 icons: {
     }
 sets:
+    primeleague.claims:
+        hide: false
+        circles: {
+            }
+        deficon: default
+        areas: {
+            }
+        label: Territórios
+        markers: {
+            }
+        lines: {
+            }
+        layerprio: 10
     markers:
         hide: false
         circles: {
@@ -8,7 +21,7 @@ sets:
         deficon: default
         areas: {
             }
-        label: Markers
+        label: Marcadores
         markers: {
             }
         lines: {

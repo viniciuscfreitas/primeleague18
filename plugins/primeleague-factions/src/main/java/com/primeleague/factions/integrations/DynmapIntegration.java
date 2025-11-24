@@ -136,8 +136,9 @@ public class DynmapIntegration {
                 if (clan == null) return;
 
                 // Obter cor do clã (cache - thread-safe)
-                String color = getClanColor(clanId);
-                int colorInt = Integer.parseInt(color, 16);
+                String colorHex = getClanColor(clanId);
+                // Converter hex (RRGGBB) para int RGB (0xRRGGBB)
+                int colorInt = (int) Long.parseLong(colorHex, 16);
 
                 // Obter mundo (precisa voltar para main thread - Bukkit API)
                 plugin.getServer().getScheduler().runTask(plugin, () -> {
@@ -189,13 +190,18 @@ public class DynmapIntegration {
                                 setFillStyleMethod.invoke(marker, 0.3, colorInt);
                             }
 
+                            // Remover códigos de cor do Minecraft (Dynmap usa HTML ou texto simples)
+                            String cleanClanName = stripColorCodes(clan.getName());
+                            String cleanClanTag = stripColorCodes(clan.getTag());
+                            String description = "Clã: " + cleanClanName + " (" + cleanClanTag + ")";
+
                             java.lang.reflect.Method setDescriptionMethod = marker.getClass().getMethod(
                                 "setDescription", String.class);
                             try {
-                                setDescriptionMethod.invoke(marker, "§6Clã: §e" + clan.getName() + "§7 (" + clan.getTag() + ")");
+                                setDescriptionMethod.invoke(marker, description);
                             } catch (Exception e) {
                                 setDescriptionMethod.setAccessible(true);
-                                setDescriptionMethod.invoke(marker, "§6Clã: §e" + clan.getName() + "§7 (" + clan.getTag() + ")");
+                                setDescriptionMethod.invoke(marker, description);
                             }
 
                             // Cache do marker (thread-safe)
@@ -305,6 +311,16 @@ public class DynmapIntegration {
         String color = String.format("%02X%02X%02X", r, g, b);
         clanColors.put(clanId, color);
         return color;
+    }
+
+    /**
+     * Remove códigos de cor do Minecraft (§) de uma string
+     * Grug Brain: Regex simples para remover § + código
+     */
+    private String stripColorCodes(String text) {
+        if (text == null) return "";
+        // Remove § + qualquer caractere (códigos de cor e formatação)
+        return text.replaceAll("§[0-9a-fk-or]", "");
     }
 
     /**
