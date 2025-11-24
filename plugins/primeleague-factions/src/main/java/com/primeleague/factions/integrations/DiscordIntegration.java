@@ -235,6 +235,42 @@ public class DiscordIntegration {
     }
 
     /**
+     * Envia notificação de território perdido por power negativo
+     */
+    public void sendTerritoryLostDueToPower(String clanName, int chunkX, int chunkZ, String worldName, int totalClaims) {
+        if (!isEnabled()) return;
+
+        // Rate limiting: 5min TTL por clan
+        String rateLimitKey = "power_loss_claim_" + clanName;
+        Long lastSent = rateLimitCache.get(rateLimitKey);
+        if (lastSent != null && System.currentTimeMillis() - lastSent < 300000) {
+            return; // Rate limited
+        }
+
+        TextChannel channel = getChannel();
+        if (channel == null) {
+            return;
+        }
+
+        // Criar embed
+        net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder();
+        embed.setTitle("🚨 Território Perdido por Power Negativo!");
+        embed.setDescription(String.format("O clã **%s** perdeu um território devido a power negativo.\n\n" +
+            "**Localização:** X: %d, Z: %d (%s)\n" +
+            "**Total de territórios restantes:** %d\n\n" +
+            "⚠️ **Atenção:** O power do clã está muito baixo. Recupere o power para evitar mais perdas!",
+            clanName, chunkX, chunkZ, worldName, totalClaims));
+        embed.setColor(0xFF4500); // Laranja avermelhado
+        embed.setFooter(dateFormat.format(new Date()));
+
+        // Enviar async via queue() (JDA 4.4.0)
+        channel.sendMessage(embed.build()).queue(
+            (success) -> rateLimitCache.put(rateLimitKey, System.currentTimeMillis()),
+            (error) -> plugin.getLogger().warning("Erro ao enviar notificação Discord: " + error.getMessage())
+        );
+    }
+
+    /**
      * Limpa cache de rate limiting (chamado periodicamente)
      */
     public void cleanRateLimitCache() {

@@ -33,6 +33,14 @@ public class ClaimManager {
     // Contador O(1) de claims por clã (otimização)
     private final Map<Integer, Integer> clanClaimCount;
 
+    /**
+     * Obtém cache de claims (para task de power negativo)
+     * Grug Brain: Método público para acesso externo
+     */
+    public Map<ChunkKey, Integer> getClaimCache() {
+        return claimCache;
+    }
+
     public ClaimManager(PrimeFactions plugin) {
         this.plugin = plugin;
         this.claimCache = new ConcurrentHashMap<>();

@@ -145,24 +145,25 @@ public class ProtectionListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onExplode(EntityExplodeEvent event) {
-        // TNT permite raiding em claims normais, mas bloqueia em safezone/warzone
+        // TNT permite raiding em claims normais, mas bloqueia se clã tiver shield ativo
         if (event.getEntityType() == EntityType.PRIMED_TNT || event.getEntityType() == EntityType.MINECART_TNT) {
-            // TNT Logic: Bloquear em safezone/warzone
-            // Grug Brain: -1 = wilderness (permite), -2 = safezone (bloqueia), -3 = warzone (bloqueia)
-            // Por enquanto, apenas verificar se é wilderness (-1) ou claim normal (clanId > 0)
-            // Claims normais permitem TNT (raiding), wilderness também
-
+            // TNT Logic: Bloquear se clã tiver shield ativo
+            // Grug Brain: Shield = proteção total contra TNT (raiding bloqueado)
             Iterator<Block> it = event.blockList().iterator();
             while (it.hasNext()) {
                 Block b = it.next();
                 int clanId = plugin.getClaimManager().getClanAt(b.getLocation());
 
-                // Se for safezone/warzone (IDs especiais), bloquear
-                // Por enquanto, apenas verificar se é wilderness ou claim normal
-                // TODO: Implementar sistema de safezone/warzone se necessário
-                // if (clanId == -2 || clanId == -3) {
-                //     it.remove(); // Bloqueia dano em safezone/warzone
-                // }
+                // Wilderness: permite TNT
+                if (clanId == -1) {
+                    continue; // Wilderness permite raiding
+                }
+
+                // Verificar se clã tem shield ativo
+                if (isShieldActive(clanId)) {
+                    it.remove(); // Bloqueia TNT se shield estiver ativo
+                }
+                // Se não tem shield, permite TNT (raiding normal)
             }
         } else {
             // Creeper/Outras explosões: bloquear dano em claims (proteção contra grief)
@@ -203,5 +204,54 @@ public class ProtectionListener implements Listener {
         if (clanId == -1) return "Wilderness";
         com.primeleague.clans.models.ClanData clan = plugin.getClansPlugin().getClansManager().getClan(clanId);
         return clan != null ? clan.getName() : "Desconhecido";
+    }
+
+    /**
+     * Verifica se clã tem shield ativo
+     * Grug Brain: Shield baseado em horas (shieldStartHour e shieldEndHour)
+     * + horas extras do upgrade (extra_shield_hours)
+     */
+    private boolean isShieldActive(int clanId) {
+        if (clanId <= 0) {
+            return false; // Wilderness ou inválido
+        }
+
+        com.primeleague.clans.models.ClanData clan = plugin.getClansPlugin().getClansManager().getClan(clanId);
+        if (clan == null) {
+            return false;
+        }
+
+        Integer shieldStart = clan.getShieldStartHour();
+        Integer shieldEnd = clan.getShieldEndHour();
+
+        // Se não tem shield configurado, não está ativo
+        if (shieldStart == null || shieldEnd == null) {
+            return false;
+        }
+
+        // Obter horas extras do upgrade
+        int extraHours = plugin.getUpgradeManager().getExtraShieldHours(clanId);
+        int adjustedEnd = shieldEnd + extraHours;
+
+        // Calcular hora atual (0-23)
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        int currentHour = cal.get(java.util.Calendar.HOUR_OF_DAY);
+
+        // Verificar se está dentro do range de shield
+        // Grug Brain: Shield pode passar meia-noite (ex: 22h-6h)
+        // Horas extras podem fazer o shield passar meia-noite mesmo que originalmente não passasse
+
+        // Se adjustedEnd >= 24, shield passa meia-noite
+        if (adjustedEnd >= 24) {
+            // Shield passa meia-noite: verifica se currentHour >= start OU currentHour < (adjustedEnd % 24)
+            int endHour = adjustedEnd % 24;
+            return currentHour >= shieldStart || currentHour < endHour;
+        } else if (shieldStart < adjustedEnd) {
+            // Shield normal (não passa meia-noite)
+            return currentHour >= shieldStart && currentHour < adjustedEnd;
+        } else {
+            // Shield originalmente passava meia-noite, e ainda passa com horas extras
+            return currentHour >= shieldStart || currentHour < adjustedEnd;
+        }
     }
 }

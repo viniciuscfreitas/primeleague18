@@ -82,6 +82,9 @@ public class PrimeFactions extends JavaPlugin {
             }.runTaskTimerAsynchronously(this, 6000L, 6000L); // 5 minutes = 6000 ticks
         }
 
+        // 8. Task periódica: Remover chunks quando power total fica negativo
+        startPowerNegativeCheckTask();
+
         getLogger().info("PrimeleagueFactions (Legendary Edition) habilitado!");
     }
 
@@ -194,5 +197,99 @@ public class PrimeFactions extends JavaPlugin {
             getLogger().severe("Erro ao configurar banco de dados: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Task periódica: Verifica power negativo e remove chunks automaticamente
+     * Grug Brain: Roda a cada 5 minutos, verifica todos os clãs com claims
+     */
+    private void startPowerNegativeCheckTask() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                // Executar async para não bloquear main thread
+                getServer().getScheduler().runTaskAsynchronously(PrimeFactions.this, () -> {
+                    // Buscar todos os clãs com claims (usar método público)
+                    java.util.Set<Integer> clansWithClaims = new java.util.HashSet<>();
+                    for (java.util.Map.Entry<com.primeleague.factions.util.ChunkKey, Integer> entry :
+                         claimManager.getClaimCache().entrySet()) {
+                        clansWithClaims.add(entry.getValue());
+                    }
+
+                    // Verificar power de cada clã
+                    for (int clanId : clansWithClaims) {
+                        double totalPower = powerManager.getClanTotalPower(clanId);
+
+                        // Se power total é negativo, calcular quantos chunks devem ser removidos
+                        if (totalPower < 0) {
+                            int currentClaims = claimManager.getClaimCount(clanId);
+                            int maxClaims = (int) (totalPower / 10.0); // Pode ser negativo
+
+                            // Se maxClaims é negativo ou zero, remover todos os chunks
+                            if (maxClaims <= 0) {
+                                // Voltar para main thread para unclaim
+                                getServer().getScheduler().runTask(PrimeFactions.this, () -> {
+                                    claimManager.unclaimAll(clanId);
+
+                                    // Notificar membros online
+                                    com.primeleague.clans.models.ClanData clan =
+                                        getClansPlugin().getClansManager().getClan(clanId);
+                                    if (clan != null) {
+                                        String msg = "§c[FACTIONS] Power negativo! Todos os territórios foram removidos.";
+                                        for (org.bukkit.entity.Player player :
+                                             org.bukkit.Bukkit.getOnlinePlayers()) {
+                                            com.primeleague.clans.models.ClanData playerClan =
+                                                getClansPlugin().getClansManager().getClanByMember(player.getUniqueId());
+                                            if (playerClan != null && playerClan.getId() == clanId) {
+                                                player.sendMessage(msg);
+                                            }
+                                        }
+                                    }
+                                });
+                            } else if (currentClaims > maxClaims) {
+                                // Remover chunks excedentes (manter apenas maxClaims)
+                                int toRemove = currentClaims - maxClaims;
+
+                                // Coletar chunks para remover (voltar para main thread)
+                                getServer().getScheduler().runTask(PrimeFactions.this, () -> {
+                                    java.util.List<com.primeleague.factions.util.ChunkKey> chunksToRemove =
+                                        new java.util.ArrayList<>();
+
+                                    for (java.util.Map.Entry<com.primeleague.factions.util.ChunkKey, Integer> entry :
+                                         claimManager.getClaimCache().entrySet()) {
+                                        if (entry.getValue() == clanId && chunksToRemove.size() < toRemove) {
+                                            chunksToRemove.add(entry.getKey());
+                                        }
+                                    }
+
+                                    // Remover chunks
+                                    for (com.primeleague.factions.util.ChunkKey key : chunksToRemove) {
+                                        claimManager.unclaimChunk(key.getWorld(), key.getX(), key.getZ());
+                                    }
+
+                                    // Notificar se removeu chunks
+                                    if (!chunksToRemove.isEmpty()) {
+                                        com.primeleague.clans.models.ClanData clan =
+                                            getClansPlugin().getClansManager().getClan(clanId);
+                                        if (clan != null) {
+                                            String msg = "§c[FACTIONS] Power insuficiente! " + chunksToRemove.size() +
+                                                " territórios foram removidos.";
+                                            for (org.bukkit.entity.Player player :
+                                                 org.bukkit.Bukkit.getOnlinePlayers()) {
+                                                com.primeleague.clans.models.ClanData playerClan =
+                                                    getClansPlugin().getClansManager().getClanByMember(player.getUniqueId());
+                                                if (playerClan != null && playerClan.getId() == clanId) {
+                                                    player.sendMessage(msg);
+                                                }
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+        }.runTaskTimerAsynchronously(this, 6000L, 6000L); // A cada 5 minutos
     }
 }

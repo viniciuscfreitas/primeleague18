@@ -218,7 +218,9 @@ public class PowerManager implements Listener {
                     maxPowerCache.put(uuid, maxPower);
                 } else {
                     // New player or not in DB yet (Core handles creation, but maybe delayed)
-                    powerCache.put(uuid, 0.0); // Start with 0 or config default? User said "Start with 0"
+                    // Grug Brain: Usar valor do config (initial-power)
+                    double initialPower = plugin.getConfig().getDouble("power.initial-power", 0.0);
+                    powerCache.put(uuid, initialPower);
                     maxPowerCache.put(uuid, maxPowerDefault);
                 }
             } catch (SQLException e) {

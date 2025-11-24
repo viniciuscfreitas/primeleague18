@@ -267,10 +267,10 @@ public class UpgradeManager {
         int newLevel = currentLevel + 1;
         data.setLevel(type, newLevel);
 
-        // Invalidar cache para forçar reload na próxima vez
-        invalidateCache(clanId);
+        // Atualizar cache imediatamente (otimismo - assume sucesso)
+        upgradeCache.put(clanId, data);
 
-        // Salvar no banco
+        // Salvar no banco (async)
         saveUpgrade(clanId, type, newLevel);
 
         return true;
@@ -278,8 +278,13 @@ public class UpgradeManager {
 
     /**
      * Salva upgrade no banco
+     * Grug Brain: Se falhar, faz rollback do cache e devolve dinheiro
      */
     private void saveUpgrade(int clanId, UpgradeType type, int level) {
+        // Capturar valores antes de async (para rollback se necessário)
+        final int oldLevel = level - 1;
+        final long cost = type.getCostForLevel(oldLevel);
+
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try (Connection conn = CoreAPI.getDatabase().getConnection();
                  PreparedStatement stmt = conn.prepareStatement(
@@ -288,7 +293,17 @@ public class UpgradeManager {
                 stmt.setInt(2, clanId);
                 stmt.executeUpdate();
             } catch (SQLException e) {
-                plugin.getLogger().log(Level.SEVERE, "Erro ao salvar upgrade", e);
+                plugin.getLogger().log(Level.SEVERE, "Erro ao salvar upgrade, fazendo rollback", e);
+
+                // Rollback: reverter cache e devolver dinheiro
+                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    UpgradeData data = getUpgrades(clanId);
+                    data.setLevel(type, oldLevel);
+                    upgradeCache.put(clanId, data);
+
+                    // Devolver dinheiro ao clan bank
+                    plugin.getClansPlugin().getClansManager().addClanBalance(clanId, cost);
+                });
             }
         });
     }
