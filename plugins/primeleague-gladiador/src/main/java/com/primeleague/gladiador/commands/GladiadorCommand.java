@@ -1,12 +1,11 @@
 package com.primeleague.gladiador.commands;
 
-import com.primeleague.clans.ClansPlugin;
-import com.primeleague.clans.managers.ClansManager;
-import com.primeleague.clans.models.ClanData;
+import com.primeleague.gladiador.integrations.ClansAPI;
 import com.primeleague.gladiador.GladiadorPlugin;
 import com.primeleague.gladiador.managers.MatchManager;
 import com.primeleague.gladiador.models.Arena;
 import com.primeleague.gladiador.models.GladiadorMatch;
+import com.primeleague.gladiador.models.GladiadorStats;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
@@ -21,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class GladiadorCommand implements CommandExecutor, TabCompleter {
 
@@ -77,6 +75,13 @@ public class GladiadorCommand implements CommandExecutor, TabCompleter {
             case "setexitspawn":
                 handleSetExitSpawn(player);
                 break;
+            case "top":
+                handleTop(player);
+                break;
+            case "tabela":
+                // Redirecionar para top (consolidado)
+                handleTop(player);
+                break;
             case "help":
             case "ajuda":
                 handleHelp(player);
@@ -98,8 +103,11 @@ public class GladiadorCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        ClansManager clansManager = ClansPlugin.getInstance().getClansManager();
-        ClanData clan = clansManager.getClanByMember(player.getUniqueId());
+        if (!ClansAPI.isEnabled()) {
+            player.sendMessage(ChatColor.RED + "Erro: PrimeleagueClans não encontrado!");
+            return;
+        }
+        Object clan = ClansAPI.getClanByMember(player.getUniqueId());
 
         if (clan == null) {
             player.sendMessage(ChatColor.RED + "Você precisa estar em um clan para participar do Gladiador.");
@@ -126,10 +134,75 @@ public class GladiadorCommand implements CommandExecutor, TabCompleter {
         player.sendMessage(ChatColor.YELLOW + "Você saiu do evento Gladiador.");
     }
 
+    private void handleTop(Player player) {
+        // Grug Brain: Query async para não bloquear thread principal
+        // Consolidado: ordena por pontos de temporada, mostra tudo (pontos, vitórias, kills, win rate)
+        plugin.getStatsManager().getTopBySeasonPointsAsync(20, top -> {
+            // Verificar se player ainda está online
+            if (!player.isOnline()) {
+                return;
+            }
+
+            player.sendMessage("");
+            player.sendMessage(ChatColor.GOLD + "=== " + ChatColor.BOLD + "TABELA DE PONTOS - GLADIADOR" + ChatColor.RESET + ChatColor.GOLD + " ===");
+            player.sendMessage("");
+
+            if (top == null || top.isEmpty()) {
+                player.sendMessage(ChatColor.GRAY + "Nenhum clan participou ainda.");
+                return;
+            }
+
+            for (int i = 0; i < top.size(); i++) {
+                GladiadorStats stats = top.get(i);
+                if (stats == null) continue;
+
+                String clanTag = "Clan #" + stats.getClanId();
+
+                // Buscar tag via ClansAPI
+                if (ClansAPI.isEnabled()) {
+                    Object clanData = ClansAPI.getClan(stats.getClanId());
+                    if (clanData != null) {
+                        String tag = ClansAPI.getClanTag(clanData);
+                        if (tag != null) {
+                            clanTag = tag;
+                        }
+                    }
+                }
+
+                String medal = "";
+                if (i == 0) medal = ChatColor.GOLD + "[1] ";
+                else if (i == 1) medal = ChatColor.GRAY + "[2] ";
+                else if (i == 2) medal = ChatColor.RED + "[3] ";
+
+                player.sendMessage(String.format("%s%s%d. %s%s %s- %s%d pontos%s | %s%d vitórias%s | %s%d kills%s | %s%.1f%% WR",
+                    medal,
+                    ChatColor.YELLOW,
+                    i + 1,
+                    ChatColor.WHITE,
+                    clanTag,
+                    ChatColor.GRAY,
+                    ChatColor.GREEN,
+                    stats.getSeasonPoints(),
+                    ChatColor.GRAY,
+                    ChatColor.AQUA,
+                    stats.getWins(),
+                    ChatColor.GRAY,
+                    ChatColor.LIGHT_PURPLE,
+                    stats.getTotalKills(),
+                    ChatColor.GRAY,
+                    ChatColor.YELLOW,
+                    stats.getWinRate()
+                ));
+            }
+            player.sendMessage("");
+        });
+    }
+
     private void handleHelp(Player player) {
         player.sendMessage(ChatColor.GOLD + "=== Comandos Gladiador ===");
         player.sendMessage(ChatColor.YELLOW + "/gladiador - Entra no evento (se estiver aberto)");
         player.sendMessage(ChatColor.YELLOW + "/gladiador sair - Sai do evento");
+        player.sendMessage(ChatColor.YELLOW + "/gladiador top - Mostra tabela de pontos da temporada");
 
         if (player.hasPermission("primeleague.admin")) {
             player.sendMessage(ChatColor.RED + "=== Comandos Admin ===");
@@ -149,7 +222,7 @@ public class GladiadorCommand implements CommandExecutor, TabCompleter {
         }
 
         if (plugin.getMatchManager().startMatch()) {
-            player.sendMessage(ChatColor.GREEN + "Evento Gladiador iniciado! As entradas estão abertas.");
+            // Mensagem já é enviada via broadcast, não duplicar
         } else {
             player.sendMessage(ChatColor.RED + "Não foi possível iniciar o evento (já existe um ativo ou sem arena disponível).");
         }
@@ -193,8 +266,7 @@ public class GladiadorCommand implements CommandExecutor, TabCompleter {
 
         // Limpar spawns antigos e definir o novo (single spawn requirement)
         plugin.getArenaManager().setSpawnPoint(arena.getId(), player.getLocation());
-        player.sendMessage(ChatColor.GREEN + "Spawn point adicionado à arena " + arenaName);
-        player.sendMessage(ChatColor.GREEN + "Spawn salvo! Jogadores podem entrar agora.");
+        player.sendMessage(ChatColor.GREEN + "Spawn point adicionado à arena " + arenaName + "!");
     }
 
     private void handleSpectator(Player player) {
@@ -205,7 +277,7 @@ public class GladiadorCommand implements CommandExecutor, TabCompleter {
 
         GladiadorMatch match = plugin.getMatchManager().getCurrentMatch();
         if (match == null) {
-            player.sendMessage(ChatColor.RED + "Não há match ativo.");
+            player.sendMessage(ChatColor.RED + "Não há Gladiador ativo.");
             return;
         }
 
@@ -229,7 +301,7 @@ public class GladiadorCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(ChatColor.RED + "Sem permissão.");
             return;
         }
-        
+
         Location loc = player.getLocation();
         plugin.getConfig().set("spawn.exit-world", loc.getWorld().getName());
         plugin.getConfig().set("spawn.exit-x", loc.getX());
@@ -238,7 +310,7 @@ public class GladiadorCommand implements CommandExecutor, TabCompleter {
         plugin.getConfig().set("spawn.exit-yaw", (double) loc.getYaw());
         plugin.getConfig().set("spawn.exit-pitch", (double) loc.getPitch());
         plugin.saveConfig();
-        
+
         player.sendMessage(ChatColor.GREEN + "Spawn de saída configurado!");
         player.sendMessage(ChatColor.GRAY + "Jogadores eliminados serão teleportados para esta localização.");
     }
@@ -247,15 +319,19 @@ public class GladiadorCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             List<String> completions = new ArrayList<>();
+            completions.add("top");
+            completions.add("tabela");
             if (sender.hasPermission("primeleague.admin")) {
                 completions.addAll(Arrays.asList("iniciar", "cancelar", "setarena", "setspawn", "setexitspawn", "spectator"));
             }
             return completions;
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("setspawn")) {
-            return plugin.getArenaManager().getAllArenas().stream()
-                    .map(Arena::getName)
-                    .collect(Collectors.toList());
+            List<String> names = new ArrayList<>();
+            for (Arena arena : plugin.getArenaManager().getAllArenas()) {
+                names.add(arena.getName());
+            }
+            return names;
         }
         return Collections.emptyList();
     }

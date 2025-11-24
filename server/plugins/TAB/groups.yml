@@ -4,10 +4,10 @@
 # Default settings for all groups
 _DEFAULT_:
   tabprefix: ""
-  tagprefix: ""
+  tagprefix: "%gladiador_tag%%elo_symbol% "
   customtabname: "%player%"
   tabsuffix: ""
-  tagsuffix: ""
+  tagsuffix: " %clans_tag%"
 
 # Per-world configurations (if needed)
 per-world: {}

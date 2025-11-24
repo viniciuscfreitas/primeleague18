@@ -15,17 +15,9 @@ settings:
   debug: false
   save-user-cache-on-stop-only: false
   filter-creative-items: true
-  moved-wrongly-threshold: 0.0625
   moved-too-quickly-threshold: 100.0
-  timeout-time: 60
-  restart-on-crash: true
-  restart-script: start.bat
-  user-cache-size: 1000
-  player-shuffle: 0
+  moved-wrongly-threshold: 0.0625
   late-bind: false
-  sample-count: 12
-  netty-threads: 4
-  bungeecord: false
   attribute:
     maxHealth:
       max: 2048.0
@@ -33,7 +25,22 @@ settings:
       max: 2048.0
     attackDamage:
       max: 2048.0
+  timeout-time: 60
+  restart-on-crash: true
+  restart-script: start.bat
+  user-cache-size: 1000
+  sample-count: 12
+  player-shuffle: 0
   int-cache-limit: 1024
+  netty-threads: 4
+  bungeecord: false
+messages:
+  whitelist: You are not whitelisted on this server!
+  unknown-command: Unknown command. Type "/help" for help.
+  server-full: The server is full!
+  outdated-client: Outdated client! Please use {0}
+  outdated-server: Outdated server! I'm still on {0}
+  restart: Server is restarting
 timings:
   enabled: false
   verbose: false
@@ -46,7 +53,6 @@ timings:
 commands:
   tab-complete: 0
   silent-commandblock-console: false
-  log: true
   replace-commands:
   - setblock
   - summon
@@ -54,13 +60,7 @@ commands:
   - tellraw
   spam-exclusions:
   - /skill
-messages:
-  whitelist: You are not whitelisted on this server!
-  unknown-command: Unknown command. Type "/help" for help.
-  server-full: The server is full!
-  outdated-client: Outdated client! Please use {0}
-  outdated-server: Outdated server! I'm still on {0}
-  restart: Server is restarting
+  log: true
 stats:
   disable-saving: true
   forced-stats:
@@ -69,31 +69,13 @@ stats:
 world-settings:
   default:
     verbose: false
-    item-despawn-rate: 3000
-    merge-radius:
-      item: 3.0
-      exp: 4.0
-    arrow-despawn-rate: 600
-    wither-spawn-sound-radius: 0
-    enable-zombie-pigmen-portal-spawns: false
-    zombie-aggressive-towards-villager: true
-    seed-village: 10387312
-    seed-feature: 14357617
-    dragon-death-sound-radius: 0
-    max-entity-collisions: 4
-    view-distance: 6
-    chunks-per-tick: 100
-    clear-tick-list: true
-    hanging-tick-frequency: 100
-    growth:
-      cactus-modifier: 100
-      cane-modifier: 100
-      melon-modifier: 100
-      mushroom-modifier: 100
-      pumpkin-modifier: 100
-      sapling-modifier: 100
-      wheat-modifier: 100
-      netherwart-modifier: 100
+    random-light-updates: false
+    nerf-spawner-mobs: false
+    entity-activation-range:
+      animals: 8
+      monsters: 8
+      misc: 4
+    save-structure-info: false
     anti-xray:
       enabled: true
       engine-mode: 1
@@ -114,27 +96,21 @@ world-settings:
       replace-blocks:
       - 1
       - 5
-    max-bulk-chunks: 5
-    save-structure-info: false
-    random-light-updates: false
-    mob-spawn-range: 0
+    growth:
+      cactus-modifier: 100
+      cane-modifier: 100
+      melon-modifier: 100
+      mushroom-modifier: 100
+      pumpkin-modifier: 100
+      sapling-modifier: 100
+      wheat-modifier: 100
+      netherwart-modifier: 100
     entity-tracking-range:
       players: 48
       animals: 8
       monsters: 8
       misc: 8
       other: 16
-    nerf-spawner-mobs: false
-    entity-activation-range:
-      animals: 8
-      monsters: 8
-      misc: 4
-    hunger:
-      walk-exhaustion: 0.2
-      sprint-exhaustion: 0.8
-      combat-exhaustion: 0.3
-      regen-exhaustion: 3.0
-    max-tnt-per-tick: 20
     ticks-per:
       hopper-transfer: 8
       hopper-check: 8
@@ -144,4 +120,28 @@ world-settings:
     max-tick-time:
       tile: 50
       entity: 50
+    max-tnt-per-tick: 20
+    max-bulk-chunks: 5
+    hunger:
+      walk-exhaustion: 0.2
+      sprint-exhaustion: 0.8
+      combat-exhaustion: 0.3
+      regen-exhaustion: 3.0
+    item-despawn-rate: 3000
+    merge-radius:
+      item: 3.0
+      exp: 4.0
+    enable-zombie-pigmen-portal-spawns: false
+    wither-spawn-sound-radius: 0
+    chunks-per-tick: 100
+    clear-tick-list: true
+    hanging-tick-frequency: 100
+    arrow-despawn-rate: 600
+    view-distance: 6
+    zombie-aggressive-towards-villager: true
+    mob-spawn-range: 0
+    max-entity-collisions: 4
+    dragon-death-sound-radius: 0
+    seed-village: 10387312
+    seed-feature: 14357617
     death-messages: false

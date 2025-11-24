@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Gerenciador de lógica de negócio dos clans
@@ -25,8 +26,72 @@ public class ClansManager {
 
     private final ClansPlugin plugin;
 
+    // Cache de roles (UUID -> RoleCache) para evitar queries síncronas em eventos frequentes
+    // Grug Brain: Cache simples com TTL 30s para balancear performance e consistência
+    private final Map<UUID, RoleCache> roleCache = new ConcurrentHashMap<>();
+    private static final long ROLE_CACHE_TTL = 30_000; // 30 segundos
+
+    // Cache de clan por membro (UUID -> ClanMemberCache) para evitar queries síncronas em eventos frequentes
+    // Grug Brain: Cache simples com TTL 30s - clan do player muda raramente
+    private final Map<UUID, ClanMemberCache> clanMemberCache = new ConcurrentHashMap<>();
+    private static final long CLAN_MEMBER_CACHE_TTL = 30_000; // 30 segundos
+
     public ClansManager(ClansPlugin plugin) {
         this.plugin = plugin;
+    }
+
+    /**
+     * Classe interna para cache de role
+     */
+    private static class RoleCache {
+        private final String role;
+        private final int clanId;
+        private final long timestamp;
+        private final long joinedAtTimestamp; // Para verificar tempo de recruit
+
+        public RoleCache(String role, int clanId, long joinedAtTimestamp) {
+            this.role = role;
+            this.clanId = clanId;
+            this.timestamp = System.currentTimeMillis();
+            this.joinedAtTimestamp = joinedAtTimestamp;
+        }
+
+        public String getRole() {
+            return role;
+        }
+
+        public int getClanId() {
+            return clanId;
+        }
+
+        public long getTimestamp() {
+            return timestamp;
+        }
+
+        public long getJoinedAtTimestamp() {
+            return joinedAtTimestamp;
+        }
+    }
+
+    /**
+     * Classe interna para cache de clan por membro
+     */
+    private static class ClanMemberCache {
+        private final ClanData clan;
+        private final long timestamp;
+
+        public ClanMemberCache(ClanData clan) {
+            this.clan = clan;
+            this.timestamp = System.currentTimeMillis();
+        }
+
+        public ClanData getClan() {
+            return clan;
+        }
+
+        public long getTimestamp() {
+            return timestamp;
+        }
     }
 
     /**
@@ -88,15 +153,9 @@ public class ClansManager {
                     // Buscar clan criado
                     ClanData clan = getClan(clanId);
 
-                    // Criar canais Discord (se disponível)
-                    if (clan != null && plugin.getDiscordIntegration() != null) {
+                    // Criar canais no Discord (async)
+                    if (plugin.getDiscordIntegration() != null) {
                         plugin.getDiscordIntegration().createDiscordChannels(clan);
-                        // Notificar Discord sobre criação do clan
-                        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                            plugin.getDiscordIntegration().notifyDiscord(clan,
-                                "🎉 Novo Clan Criado!",
-                                "O clan **" + clan.getName() + "** (" + clan.getTag() + ") foi criado!");
-                        }, 20L); // Delay 1 segundo para garantir que canais foram criados
                     }
 
                     return clan;
@@ -117,7 +176,7 @@ public class ClansManager {
              PreparedStatement stmt = conn.prepareStatement(
                 "SELECT id, name, tag, tag_clean, leader_uuid, created_at, description, " +
                 "discord_channel_id, discord_role_id, home_world, home_x, home_y, home_z, " +
-                "points, event_wins_count, blocked_from_events " +
+                "points, event_wins_count, blocked_from_events, shield_start_hour, shield_end_hour " +
                 "FROM clans WHERE id = ?")) {
             stmt.setInt(1, clanId);
 
@@ -142,7 +201,7 @@ public class ClansManager {
              PreparedStatement stmt = conn.prepareStatement(
                 "SELECT id, name, tag, tag_clean, leader_uuid, created_at, description, " +
                 "discord_channel_id, discord_role_id, home_world, home_x, home_y, home_z, " +
-                "points, event_wins_count, blocked_from_events " +
+                "points, event_wins_count, blocked_from_events, shield_start_hour, shield_end_hour " +
                 "FROM clans WHERE UPPER(tag_clean) = ?")) {
             stmt.setString(1, tagClean);
 
@@ -159,23 +218,35 @@ public class ClansManager {
     }
 
     /**
-     * Busca clan por membro
+     * Busca clan por membro (com cache)
+     * Grug Brain: Cache em memória para evitar queries síncronas em eventos frequentes
      */
     public ClanData getClanByMember(UUID playerUuid) {
+        // Verificar cache primeiro
+        ClanMemberCache cached = clanMemberCache.get(playerUuid);
+        if (cached != null &&
+            System.currentTimeMillis() - cached.getTimestamp() < CLAN_MEMBER_CACHE_TTL) {
+            return cached.getClan(); // Pode ser null (player não está em clan)
+        }
+
+        // Cache expirado ou não existe - buscar do banco
         try (Connection conn = CoreAPI.getDatabase().getConnection();
              PreparedStatement stmt = conn.prepareStatement(
                 "SELECT c.id, c.name, c.tag, c.tag_clean, c.leader_uuid, c.created_at, c.description, " +
                 "c.discord_channel_id, c.discord_role_id, c.home_world, c.home_x, c.home_y, c.home_z, " +
-                "c.points, c.event_wins_count, c.blocked_from_events " +
+                "c.points, c.event_wins_count, c.blocked_from_events, c.shield_start_hour, c.shield_end_hour " +
                 "FROM clans c JOIN clan_members cm ON c.id = cm.clan_id " +
                 "WHERE cm.player_uuid = ?")) {
             stmt.setObject(1, playerUuid);
 
             try (ResultSet rs = stmt.executeQuery()) {
+                ClanData clan = null;
                 if (rs.next()) {
-                    return mapResultSetToClanData(rs);
+                    clan = mapResultSetToClanData(rs);
                 }
-                return null;
+                // Atualizar cache (mesmo se null - player não está em clan)
+                clanMemberCache.put(playerUuid, new ClanMemberCache(clan));
+                return clan;
             }
         } catch (SQLException e) {
             plugin.getLogger().severe("Erro ao buscar clan por membro: " + e.getMessage());
@@ -204,18 +275,11 @@ public class ClansManager {
             stmt.setObject(2, playerUuid);
             stmt.setString(3, role);
             stmt.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
-
             int rows = stmt.executeUpdate();
             if (rows > 0) {
-                // Notificar Discord (se disponível)
-                ClanData clan = getClan(clanId);
-                if (clan != null && plugin.getDiscordIntegration() != null) {
-                    com.primeleague.core.models.PlayerData playerData = CoreAPI.getPlayer(playerUuid);
-                    String playerName = playerData != null ? playerData.getName() : "Desconhecido";
-                    plugin.getDiscordIntegration().notifyDiscord(clan,
-                        "👤 Novo Membro",
-                        "**" + playerName + "** entrou no clan!");
-                }
+                // Invalidar caches (player entrou no clan)
+                invalidateRoleCache(playerUuid);
+                invalidateClanMemberCache(playerUuid);
             }
             return rows > 0;
         } catch (SQLException e) {
@@ -236,6 +300,10 @@ public class ClansManager {
 
             int rows = stmt.executeUpdate();
             if (rows > 0) {
+                // Invalidar caches (player saiu do clan)
+                invalidateRoleCache(playerUuid);
+                invalidateClanMemberCache(playerUuid);
+
                 // Notificar Discord (se disponível)
                 ClanData clan = getClan(clanId);
                 if (clan != null && plugin.getDiscordIntegration() != null) {
@@ -281,25 +349,99 @@ public class ClansManager {
     }
 
     /**
-     * Busca role do membro no clan
+     * Busca role do membro no clan (com cache)
+     * Grug Brain: Cache em memória para evitar queries síncronas em eventos frequentes
      */
     public String getMemberRole(int clanId, UUID playerUuid) {
+        // Verificar cache primeiro
+        RoleCache cached = roleCache.get(playerUuid);
+        if (cached != null &&
+            System.currentTimeMillis() - cached.getTimestamp() < ROLE_CACHE_TTL &&
+            cached.getClanId() == clanId) {
+            return cached.getRole();
+        }
+
+        // Cache expirado ou não existe - buscar do banco
         try (Connection conn = CoreAPI.getDatabase().getConnection();
              PreparedStatement stmt = conn.prepareStatement(
-                "SELECT role FROM clan_members WHERE clan_id = ? AND player_uuid = ?")) {
+                "SELECT role, joined_at FROM clan_members WHERE clan_id = ? AND player_uuid = ?")) {
             stmt.setInt(1, clanId);
             stmt.setObject(2, playerUuid);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getString("role");
+                    String role = rs.getString("role");
+                    Timestamp joinedAt = rs.getTimestamp("joined_at");
+                    long joinedAtTs = joinedAt != null ? joinedAt.getTime() : 0;
+
+                    // Atualizar cache
+                    roleCache.put(playerUuid, new RoleCache(role, clanId, joinedAtTs));
+                    return role;
                 }
+                // Player não está no clan - remover do cache
+                roleCache.remove(playerUuid);
                 return null;
             }
         } catch (SQLException e) {
             plugin.getLogger().severe("Erro ao buscar role: " + e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Invalida cache de role do player (chamado quando role muda)
+     */
+    public void invalidateRoleCache(UUID playerUuid) {
+        roleCache.remove(playerUuid);
+    }
+
+    /**
+     * Invalida cache de clan por membro (chamado quando player entra/sai de clan)
+     */
+    public void invalidateClanMemberCache(UUID playerUuid) {
+        clanMemberCache.remove(playerUuid);
+    }
+
+    /**
+     * Verifica se player tem acesso a containers no chunk claimado
+     * Grug Brain: RECRUIT nunca tem acesso (anti-spy). Apenas MEMBER/OFFICER/LEADER podem acessar.
+     * Usa cache para evitar queries síncronas
+     */
+    public boolean hasContainerAccess(int clanId, UUID playerUuid) {
+        // Verificar cache primeiro
+        RoleCache cached = roleCache.get(playerUuid);
+        String role;
+        long joinedAtTimestamp = 0;
+
+        if (cached != null &&
+            System.currentTimeMillis() - cached.getTimestamp() < ROLE_CACHE_TTL &&
+            cached.getClanId() == clanId) {
+            // Usar cache
+            role = cached.getRole();
+            joinedAtTimestamp = cached.getJoinedAtTimestamp();
+        } else {
+            // Cache expirado - buscar do banco (já atualiza cache com role + joined_at)
+            role = getMemberRole(clanId, playerUuid);
+            if (role == null) {
+                return false; // Não está no clan
+            }
+            // Buscar joinedAt do cache atualizado (getMemberRole já atualizou o cache)
+            cached = roleCache.get(playerUuid);
+            if (cached != null && cached.getClanId() == clanId) {
+                joinedAtTimestamp = cached.getJoinedAtTimestamp();
+            }
+        }
+
+        // RECRUIT nunca tem acesso - precisa ser promovido pelo líder
+        if ("RECRUIT".equals(role)) {
+            return false; // Recruit nunca acessa containers (anti-spy)
+        }
+
+        // Verificar config para cada role (LEADER, OFFICER, MEMBER)
+        String roleLower = role.toUpperCase();
+        boolean roleHasAccess = plugin.getConfig().getBoolean("container-access." + roleLower.toLowerCase(), true);
+
+        return roleHasAccess; // Retorna baseado na config
     }
 
     /**
@@ -365,8 +507,13 @@ public class ClansManager {
                 }
             }
 
-            // Adicionar membro
-            if (!addMember(clanId, playerUuid, "MEMBER")) {
+            // Verificar se player era solo (não estava em clan)
+            com.primeleague.clans.models.ClanData oldClan = getClanByMember(playerUuid);
+            boolean wasSolo = (oldClan == null);
+
+            // Adicionar membro como RECRUIT (novos membros começam como recrutas)
+            // Grug Brain: Anti-spy - recruits não têm acesso a containers por 24h
+            if (!addMember(clanId, playerUuid, "RECRUIT")) {
                 return false;
             }
 
@@ -376,6 +523,11 @@ public class ClansManager {
                 deleteStmt.setInt(1, clanId);
                 deleteStmt.setObject(2, playerUuid);
                 deleteStmt.executeUpdate();
+            }
+
+            // Merge Solo: Auto-claimar builds e transferir dinheiro
+            if (wasSolo) {
+                mergeSoloToClan(playerUuid, clanId);
             }
 
             return true;
@@ -441,6 +593,16 @@ public class ClansManager {
         boolean blockedFromEvents = rs.getBoolean("blocked_from_events");
         if (!rs.wasNull()) {
             clan.setBlockedFromEvents(blockedFromEvents);
+        }
+
+        // Shield
+        int shieldStart = rs.getInt("shield_start_hour");
+        if (!rs.wasNull()) {
+            clan.setShieldStartHour(shieldStart);
+        }
+        int shieldEnd = rs.getInt("shield_end_hour");
+        if (!rs.wasNull()) {
+            clan.setShieldEndHour(shieldEnd);
         }
 
         return clan;
@@ -537,6 +699,10 @@ public class ClansManager {
             stmt.setInt(2, clanId);
             stmt.setObject(3, playerUuid);
             int rows = stmt.executeUpdate();
+            if (rows > 0) {
+                // Invalidar cache de role (role mudou)
+                invalidateRoleCache(playerUuid);
+            }
             return rows > 0;
         } catch (SQLException e) {
             plugin.getLogger().severe("Erro ao atualizar role: " + e.getMessage());
@@ -603,6 +769,24 @@ public class ClansManager {
             return rows > 0;
         } catch (SQLException e) {
             plugin.getLogger().severe("Erro ao definir home do clan: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Define horário do shield do clan
+     */
+    public boolean setClanShield(int clanId, int startHour, int endHour) {
+        try (Connection conn = CoreAPI.getDatabase().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                "UPDATE clans SET shield_start_hour = ?, shield_end_hour = ? WHERE id = ?")) {
+            stmt.setInt(1, startHour);
+            stmt.setInt(2, endHour);
+            stmt.setInt(3, clanId);
+            int rows = stmt.executeUpdate();
+            return rows > 0;
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Erro ao definir shield do clan: " + e.getMessage());
             return false;
         }
     }
@@ -683,6 +867,7 @@ public class ClansManager {
             plugin.invalidateTopCache("points");
 
             // Notificar Discord async
+            /*
             if (plugin.getDiscordIntegration() != null) {
                 ClanData updatedClan = getClan(clanId);
                 if (updatedClan != null) {
@@ -691,6 +876,7 @@ public class ClansManager {
                     });
                 }
             }
+            */
 
             plugin.getLogger().info("[CLAN WIN] Clan " + clan.getName() + " ganhou evento " + eventName + " (+" + points + " pontos)");
             return true;
@@ -933,11 +1119,13 @@ public class ClansManager {
             plugin.invalidateAlertCache(clanId);
 
             // Notificar Discord async
+            /*
             if (plugin.getDiscordIntegration() != null) {
                 plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
                     plugin.getDiscordIntegration().notifyDiscordAlert(clan, alertType, message, playerUuid);
                 });
             }
+            */
 
             // Notificar membros online do clan (thread principal via scheduler)
             if (plugin.getConfig().getBoolean("alerts.auto-notify-online", true)) {
@@ -1142,45 +1330,165 @@ public class ClansManager {
             // Obter pontos atuais
             int currentPoints = getClanPoints(clanId);
 
-            // Calcular pontos corretos (histórico - pontos removidos por alertas)
-            int correctPoints = historicalPoints - pointsToRemove;
+            // Pontos esperados = histórico - penalidades
+            int expectedPoints = historicalPoints - pointsToRemove;
 
-            // Se pontos atuais > pontos corretos, remover diferença (pode ficar negativo)
-            if (currentPoints > correctPoints) {
-                int diff = currentPoints - correctPoints;
+            // Se pontos atuais != pontos esperados, atualizar
+            if (currentPoints != expectedPoints) {
                 try (PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE clans SET points = points - ? WHERE id = ?")) {
-                    stmt.setInt(1, diff);
+                    "UPDATE clans SET points = ? WHERE id = ?")) {
+                    stmt.setInt(1, expectedPoints);
                     stmt.setInt(2, clanId);
                     stmt.executeUpdate();
                 }
-            } else if (currentPoints < correctPoints) {
-                // Se pontos atuais < pontos corretos, adicionar diferença (pode acontecer se alerta foi removido)
-                int diff = correctPoints - currentPoints;
-                try (PreparedStatement stmt = conn.prepareStatement(
-                    "UPDATE clans SET points = points + ? WHERE id = ?")) {
-                    stmt.setInt(1, diff);
-                    stmt.setInt(2, clanId);
-                    stmt.executeUpdate();
-                }
+                // Invalidar cache de ranking
+                plugin.invalidateTopCache("points");
             }
-
-            // 5. Verificar config: alerts.block-threshold
-            int blockThreshold = plugin.getConfig().getInt("alerts.block-threshold", 10);
-
-            // 6. Se alertCount >= blockThreshold, bloquear clan de eventos
-            try (PreparedStatement stmt = conn.prepareStatement(
-                "UPDATE clans SET blocked_from_events = ? WHERE id = ?")) {
-                stmt.setBoolean(1, alertCount >= blockThreshold);
-                stmt.setInt(2, clanId);
-                stmt.executeUpdate();
-            }
-
-            // Invalidar cache de ranking
-            plugin.invalidateTopCache("points");
         } catch (SQLException e) {
             plugin.getLogger().severe("Erro ao aplicar penalidades: " + e.getMessage());
         }
     }
-}
 
+    /**
+     * Merge Solo: Transfere builds e dinheiro do solo player para o clan
+     * Grug Brain: Auto-claima chunks e transfere dinheiro para banco do clan
+     * Usa reflection para soft dependencies (Factions, Economy)
+     */
+    private void mergeSoloToClan(UUID playerUuid, int clanId) {
+        // Executar async para não bloquear thread principal
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                // 1. Auto-claimar chunks onde solo player buildou (soft dependency: Factions)
+                org.bukkit.plugin.Plugin factionsPlugin = plugin.getServer().getPluginManager().getPlugin("PrimeleagueFactions");
+                if (factionsPlugin != null && factionsPlugin.isEnabled()) {
+                    try {
+                        // Reflection para evitar hard dependency
+                        java.lang.reflect.Method getClaimManager = factionsPlugin.getClass().getMethod("getClaimManager");
+                        Object claimManager = getClaimManager.invoke(factionsPlugin);
+
+                        // Obter limite de chunks do config
+                        int maxChunks = plugin.getConfig().getInt("clan.merge-chunk-limit", 5);
+
+                        // Usar método com limite e contagem de pulados
+                        java.lang.reflect.Method autoClaimMethod = claimManager.getClass().getMethod("autoClaimSoloBuilds", UUID.class, int.class, int.class);
+                        int[] result = (int[]) autoClaimMethod.invoke(claimManager, playerUuid, clanId, maxChunks);
+                        int claimedCount = result[0];
+                        int skippedCount = result[1];
+
+                        // Notificar player (voltar para thread principal)
+                        final int finalClaimed = claimedCount;
+                        final int finalSkipped = skippedCount;
+                        plugin.getServer().getScheduler().runTask(plugin, () -> {
+                            org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(playerUuid);
+                            if (player != null && player.isOnline()) {
+                                if (finalClaimed > 0) {
+                                    if (finalSkipped > 0) {
+                                        player.sendMessage("§a" + finalClaimed + " territórios seus foram automaticamente claimados para o clan! §7(" + finalSkipped + " pulados - já ocupados)");
+                                    } else {
+                                        player.sendMessage("§a" + finalClaimed + " territórios seus foram automaticamente claimados para o clan!");
+                                    }
+                                } else if (finalSkipped > 0) {
+                                    player.sendMessage("§7" + finalSkipped + " territórios seus já estavam ocupados e não puderam ser claimados.");
+                                }
+                            }
+                        });
+                    } catch (Exception e) {
+                        plugin.getLogger().fine("Erro ao auto-claimar builds solo: " + e.getMessage());
+                    }
+                }
+
+                // 2. Transferir dinheiro para banco do clan (soft dependency: Economy)
+                org.bukkit.plugin.Plugin economyPlugin = plugin.getServer().getPluginManager().getPlugin("PrimeleagueEconomy");
+                if (economyPlugin != null && economyPlugin.isEnabled()) {
+                    try {
+                        // Reflection para evitar hard dependency
+                        Class<?> economyAPIClass = Class.forName("com.primeleague.economy.EconomyAPI");
+                        java.lang.reflect.Method isEnabledMethod = economyAPIClass.getMethod("isEnabled");
+                        boolean enabled = (Boolean) isEnabledMethod.invoke(null);
+
+                        if (enabled) {
+                            java.lang.reflect.Method getBalanceMethod = economyAPIClass.getMethod("getBalance", UUID.class);
+                            double soloBalance = (Double) getBalanceMethod.invoke(null, playerUuid);
+
+                            if (soloBalance > 0) {
+                                // Remover do player
+                                java.lang.reflect.Method removeMoneyMethod = economyAPIClass.getMethod("removeMoney", UUID.class, double.class, String.class);
+                                removeMoneyMethod.invoke(null, playerUuid, soloBalance, "Merge Solo -> Clan");
+
+                                // Adicionar ao banco do clan (em centavos)
+                                long cents = (long) (soloBalance * 100);
+                                addClanBalance(clanId, cents);
+
+                                // Log de transação (auditoria anti-dupe)
+                                logClanTransaction(clanId, playerUuid, cents, "MERGE_SOLO");
+
+                                // Notificar player e clan (voltar para thread principal)
+                                final double finalBalance = soloBalance;
+                                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                                    org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(playerUuid);
+                                    String playerName = player != null ? player.getName() : "Desconhecido";
+
+                                    if (player != null && player.isOnline()) {
+                                        player.sendMessage("§aSeus §e" + String.format("%.2f", finalBalance) + " ¢ §aforam transferidos para o banco do clan!");
+                                    }
+
+                                    // Notificar membros do clan
+                                    ClanData clan = getClan(clanId);
+                                    if (clan != null) {
+                                        List<ClanMember> members = getMembers(clanId);
+                                        for (ClanMember member : members) {
+                                            org.bukkit.entity.Player memberPlayer = org.bukkit.Bukkit.getPlayer(member.getPlayerUuid());
+                                            if (memberPlayer != null && memberPlayer.isOnline()) {
+                                                memberPlayer.sendMessage("§e" + playerName + " §7entrou e doou §e" + String.format("%.2f", finalBalance) + " ¢ §7ao banco do clan!");
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    } catch (Exception e) {
+                        plugin.getLogger().fine("Erro ao transferir dinheiro solo: " + e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                plugin.getLogger().severe("Erro ao fazer merge solo para clan: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+    }
+
+    /**
+     * Log de transação do banco do clan (auditoria anti-dupe)
+     * Grug Brain: Tabela simples, INSERT direto
+     */
+    private void logClanTransaction(int clanId, UUID playerUuid, long amount, String type) {
+        try (Connection conn = CoreAPI.getDatabase().getConnection();
+             Statement stmt = conn.createStatement()) {
+            // Criar tabela se não existir (Grug Brain: simples, direto)
+            try {
+                stmt.execute("CREATE TABLE IF NOT EXISTS clan_transactions (" +
+                        "id SERIAL PRIMARY KEY, " +
+                        "clan_id INT NOT NULL, " +
+                        "player_uuid UUID NOT NULL, " +
+                        "amount BIGINT NOT NULL, " +
+                        "type VARCHAR(50) NOT NULL, " +
+                        "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                        "FOREIGN KEY (clan_id) REFERENCES clans(id) ON DELETE CASCADE" +
+                        ")");
+            } catch (SQLException ignored) {} // Tabela já existe
+
+            // Inserir log
+            try (PreparedStatement insertStmt = conn.prepareStatement(
+                    "INSERT INTO clan_transactions (clan_id, player_uuid, amount, type) VALUES (?, ?, ?, ?)")) {
+                insertStmt.setInt(1, clanId);
+                insertStmt.setObject(2, playerUuid);
+                insertStmt.setLong(3, amount);
+                insertStmt.setString(4, type);
+                insertStmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().fine("Erro ao logar transação do clan: " + e.getMessage());
+            // Não falha o merge se o log falhar (não-crítico)
+        }
+    }
+}

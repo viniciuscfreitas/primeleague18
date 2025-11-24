@@ -28,7 +28,7 @@ tablist-name-formatting:
 
 # https://github.com/NEZNAMY/TAB/wiki/Feature-guide:-Nametags
 scoreboard-teams:
-  enabled: false
+  enabled: true
   enable-collision: true
   invisible-nametags: false
   sorting-types:
@@ -130,6 +130,7 @@ placeholder-refresh-intervals:
   "%clans_tag%": 1000
   "%economy_balance_formatted%": 1000
   "%online%": 1000
+  "%gladiador_tag%": 2000
 
 # assigning groups by permission nodes instead of taking them from permission plugin
 assign-groups-by-permissions: false

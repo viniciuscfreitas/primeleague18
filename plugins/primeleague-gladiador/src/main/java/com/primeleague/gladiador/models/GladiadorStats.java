@@ -13,6 +13,7 @@ public class GladiadorStats {
     private int participations;
     private int totalKills;
     private int totalDeaths;
+    private int seasonPoints;
     private Date lastWin;
 
     public GladiadorStats() {
@@ -24,6 +25,7 @@ public class GladiadorStats {
         this.participations = 0;
         this.totalKills = 0;
         this.totalDeaths = 0;
+        this.seasonPoints = 0;
     }
 
     // Getters e Setters
@@ -65,6 +67,14 @@ public class GladiadorStats {
 
     public void setTotalDeaths(int totalDeaths) {
         this.totalDeaths = totalDeaths;
+    }
+
+    public int getSeasonPoints() {
+        return seasonPoints;
+    }
+
+    public void setSeasonPoints(int seasonPoints) {
+        this.seasonPoints = seasonPoints;
     }
 
     public Date getLastWin() {

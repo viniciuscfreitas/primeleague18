@@ -19,9 +19,35 @@ match:
   # Cancelar partida se jogador desconectar
   cancel-on-disconnect: true
   # Penalizar ELO se desconectar durante partida ranqueada
-  penalize-disconnect: false
+  penalize-disconnect: true
+  # ELO perdido ao desconectar em partida ranqueada
+  disconnect-penalty-elo: 50
+  # Ban temporário ao desconectar (em minutos, 0 = sem ban)
+  disconnect-ban-minutes: 0
   # Enviar broadcast quando a partida termina
   broadcast-on-end: true
+  # Configurações para modo "anywhere"
+  anywhere:
+    # Distância máxima permitida entre players (em blocos)
+    max-distance: 50
+    # Avisar se players estão muito distantes mas permitir
+    warn-distance: 30
+
+# Anti-Farm (Prevenção de farm de ELO)
+anti-farm:
+  # Habilitar sistema anti-farm
+  enabled: true
+  # Quantos matches recentes manter por player (para análise)
+  max-recent-matches: 10
+  # Janela de tempo para considerar suspeito (em segundos)
+  suspicious-time-window: 300
+  # Duração mínima de match para não ser suspeito (em segundos)
+  min-match-duration: 10
+  # Máximo de matches com mesmo oponente na janela antes de ser suspeito
+  # (2 = permite 2 matches, então 3º match = suspeito)
+  max-same-opponent-matches: 2
+  # Fator de redução de ELO em matches suspeitos (0.5 = 50% do ELO normal)
+  elo-reduction-factor: 0.5
 
 # Kits
 kits:
@@ -98,10 +124,10 @@ messages:
     cancelled: "§cPartida cancelada"
     disconnect: "§c{player} desconectou. Partida cancelada."
   duel:
-    challenge-sent: "§aDesafio enviado para {player}"
-    challenge-received: "§a{player} te desafiou! Use /x1 aceitar ou /x1 negar"
-    accepted: "§a{player} aceitou seu desafio!"
-    denied: "§c{player} negou seu desafio"
+    challenge-sent: "§a✓ Desafio enviado para {player}"
+    challenge-received: "§a{player} te desafiou para um x1! Use §e/x1 aceitar §aou §e/x1 negar"
+    accepted: "§a✓ {player} aceitou seu desafio! Preparando..."
+    denied: "§c✗ {player} negou seu desafio"
     not-found: "§cJogador não encontrado ou offline"
   elo:
     change: "§7ELO: {change} §7({elo})"
@@ -111,4 +137,7 @@ messages:
     no-arena: "§cNenhuma arena disponível no momento"
     invalid-kit: "§cKit inválido: {kit}"
     permission: "§cVocê não tem permissão para isso"
+    different-worlds: "§cVocês estão em mundos diferentes! Use uma arena."
+    too-far: "§cMuito distante! ({distance} blocos, máximo: {max})"
+    unsafe-location: "§cLocalização perigosa detectada!"
 

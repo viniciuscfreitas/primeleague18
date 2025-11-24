@@ -1,7 +1,5 @@
 package com.primeleague.x1.models;
 
-import org.bukkit.Location;
-
 import java.util.Date;
 import java.util.UUID;
 
@@ -20,6 +18,8 @@ public class Match {
     private Date startTime;
     private Date endTime;
     private UUID winner;
+    private boolean anywhere; // Se true, não teleporta para arena (usa localização atual)
+    private boolean noKit; // Se true, não aplica kit (usa itens do jogador)
 
     public enum MatchStatus {
         WAITING,
@@ -28,11 +28,17 @@ public class Match {
     }
 
     public Match(UUID player1, UUID player2, String kit, Arena arena, boolean ranked) {
+        this(player1, player2, kit, arena, ranked, false, false);
+    }
+
+    public Match(UUID player1, UUID player2, String kit, Arena arena, boolean ranked, boolean anywhere, boolean noKit) {
         this.player1 = player1;
         this.player2 = player2;
         this.kit = kit;
         this.arena = arena;
         this.ranked = ranked;
+        this.anywhere = anywhere;
+        this.noKit = noKit;
         this.status = MatchStatus.WAITING;
         this.startTime = new Date();
     }
@@ -107,6 +113,22 @@ public class Match {
 
     public void setWinner(UUID winner) {
         this.winner = winner;
+    }
+
+    public boolean isAnywhere() {
+        return anywhere;
+    }
+
+    public void setAnywhere(boolean anywhere) {
+        this.anywhere = anywhere;
+    }
+
+    public boolean isNoKit() {
+        return noKit;
+    }
+
+    public void setNoKit(boolean noKit) {
+        this.noKit = noKit;
     }
 }
 

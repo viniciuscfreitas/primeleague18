@@ -8,6 +8,16 @@ cache:
 # Limite de membros por clan (0 = ilimitado)
 clan:
   max-members: 0
+  # Limite de chunks que podem ser auto-claimados no merge solo (0 = ilimitado)
+  merge-chunk-limit: 5
+
+# Controle de acesso a containers (baús, furnaces, etc) por rank
+container-access:
+  leader: true    # Líder sempre tem acesso
+  officer: true   # Oficiais têm acesso
+  member: true    # Membros têm acesso (padrão)
+  recruit: false  # Recrutas começam sem acesso por 24h (anti-spy)
+  recruit-wait-hours: 24  # Horas que recruit precisa esperar para ter acesso
 
 # Clan Chat
 clan-chat:

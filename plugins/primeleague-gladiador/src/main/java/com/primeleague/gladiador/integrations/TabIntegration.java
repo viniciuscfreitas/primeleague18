@@ -18,7 +18,6 @@ public class TabIntegration {
     private boolean enabled = false;
     private Object tabApi = null;
     private java.lang.reflect.Method getPlayerMethod = null;
-    private java.lang.reflect.Method setTabListNameMethod = null;
 
     public TabIntegration(GladiadorPlugin plugin) {
         this.plugin = plugin;
@@ -66,18 +65,7 @@ public class TabIntegration {
                 return;
             }
 
-            // Validar método setTabListName (para atualizar nome na tablist)
-            try {
-                setTabListNameMethod = tabPlayerClass.getMethod("setTabListName", String.class);
-            } catch (NoSuchMethodException e) {
-                // Tentar método alternativo
-                try {
-                    setTabListNameMethod = tabPlayerClass.getMethod("setCustomTabName", String.class);
-                } catch (NoSuchMethodException e2) {
-                    plugin.getLogger().info("TAB: Método setTabListName não encontrado - integração tablist desabilitada");
-                    return;
-                }
-            }
+            // Nota: TAB gerencia tablist automaticamente, não precisamos modificar métodos
 
             enabled = true;
             plugin.getLogger().info("TAB encontrado - integração tablist habilitada");

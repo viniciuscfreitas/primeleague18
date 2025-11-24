@@ -48,7 +48,7 @@ public class DiscordIntegration {
 
     /**
      * Obtém JDA do DiscordPlugin
-     * Grug Brain: Usa casting direto (softdepend) - mais rápido e seguro que reflection
+     * Grug Brain: Usa reflection para evitar NoClassDefFoundError se plugin não estiver no classpath
      */
     private JDA getJDA() {
         if (!isDiscordEnabled()) {
@@ -57,17 +57,31 @@ public class DiscordIntegration {
 
         try {
             Plugin discordPlugin = plugin.getServer().getPluginManager().getPlugin("PrimeleagueDiscord");
-            if (discordPlugin instanceof com.primeleague.discord.DiscordPlugin) {
-                com.primeleague.discord.DiscordPlugin dp = (com.primeleague.discord.DiscordPlugin) discordPlugin;
-                com.primeleague.discord.bot.DiscordBot bot = dp.getDiscordBot();
-                if (bot != null) {
-                    return bot.getJDA();
-                }
+            if (discordPlugin == null) {
+                return null;
             }
+
+            // Usar reflection para evitar NoClassDefFoundError
+            Class<?> discordPluginClass = Class.forName("com.primeleague.discord.DiscordPlugin");
+            if (!discordPluginClass.isInstance(discordPlugin)) {
+                return null;
+            }
+
+            java.lang.reflect.Method getDiscordBotMethod = discordPluginClass.getMethod("getDiscordBot");
+            Object bot = getDiscordBotMethod.invoke(discordPlugin);
+            if (bot == null) {
+                return null;
+            }
+
+            java.lang.reflect.Method getJDAMethod = bot.getClass().getMethod("getJDA");
+            return (JDA) getJDAMethod.invoke(bot);
+        } catch (ClassNotFoundException e) {
+            // Plugin não está no classpath - ignorar silenciosamente
+            return null;
         } catch (Exception e) {
             plugin.getLogger().warning("Erro ao obter JDA: " + e.getMessage());
+            return null;
         }
-        return null;
     }
 
     /**

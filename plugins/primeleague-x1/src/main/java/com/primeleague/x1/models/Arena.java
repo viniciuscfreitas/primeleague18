@@ -1,7 +1,6 @@
 package com.primeleague.x1.models;
 
 import org.bukkit.Location;
-import org.bukkit.World;
 
 /**
  * Modelo de Arena

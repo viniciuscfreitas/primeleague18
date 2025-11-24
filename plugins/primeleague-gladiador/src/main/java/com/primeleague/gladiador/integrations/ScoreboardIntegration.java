@@ -31,6 +31,7 @@ public class ScoreboardIntegration {
     /**
      * Inicializa integração com AnimatedScoreboard
      * Grug Brain: Usa reflexão para acessar API sem dependência Maven
+     * AnimatedScoreboard usa método setPlayerScoreboard(Player, String)
      */
     private void initialize() {
         Plugin asPlugin = Bukkit.getPluginManager().getPlugin("AnimatedScoreboard");
@@ -40,48 +41,46 @@ public class ScoreboardIntegration {
         }
 
         try {
+            // AnimatedScoreboard API: getInstance() -> setPlayerScoreboard(Player, String)
+            Class<?> apiClass = Class.forName("com.animatedscoreboard.api.AnimatedScoreboardAPI");
+            Method getInstanceMethod = apiClass.getMethod("getInstance");
+            Object apiInstance = getInstanceMethod.invoke(null);
+            
+            if (apiInstance != null) {
+                // Método: setPlayerScoreboard(Player, String)
+                setScoreboardMethod = apiInstance.getClass().getMethod("setPlayerScoreboard", Player.class, String.class);
+                animatedScoreboardPlugin = apiInstance;
+                this.enabled = true;
+                plugin.getLogger().info("Integração com AnimatedScoreboard habilitada (via API)");
+                return;
+            }
+        } catch (Exception e) {
+            // API não encontrada, tentar métodos alternativos
+        }
+
+        // Fallback: tentar métodos alternativos
+        try {
             animatedScoreboardPlugin = asPlugin;
             Class<?> clazz = asPlugin.getClass();
 
-            // Tentar diferentes métodos comuns do AnimatedScoreboard
-            // Método 1: setScoreboard(Player, String)
+            // Método 1: setPlayerScoreboard(Player, String) direto
             try {
-                setScoreboardMethod = clazz.getMethod("setScoreboard", Player.class, String.class);
+                setScoreboardMethod = clazz.getMethod("setPlayerScoreboard", Player.class, String.class);
+                this.enabled = true;
+                plugin.getLogger().info("Integração com AnimatedScoreboard habilitada (método direto)");
+                return;
             } catch (NoSuchMethodException e1) {
-                // Método 2: setPlayerScoreboard(Player, String)
+                // Método 2: setScoreboard(Player, String)
                 try {
-                    setScoreboardMethod = clazz.getMethod("setPlayerScoreboard", Player.class, String.class);
+                    setScoreboardMethod = clazz.getMethod("setScoreboard", Player.class, String.class);
+                    this.enabled = true;
+                    plugin.getLogger().info("Integração com AnimatedScoreboard habilitada (método alternativo)");
+                    return;
                 } catch (NoSuchMethodException e2) {
-                    // Método 3: Via API manager
-                    try {
-                        Method getApiMethod = clazz.getMethod("getAPI");
-                        Object api = getApiMethod.invoke(asPlugin);
-                        if (api != null) {
-                            try {
-                                setScoreboardMethod = api.getClass().getMethod("setScoreboard", Player.class, String.class);
-                                animatedScoreboardPlugin = api;
-                            } catch (NoSuchMethodException e3) {
-                                setScoreboardMethod = api.getClass().getMethod("setPlayerScoreboard", Player.class, String.class);
-                                animatedScoreboardPlugin = api;
-                            }
-                        }
-                    } catch (Exception e3) {
-                        // Método 4: Tentar via ScoreboardManager interno
-                        try {
-                            Object manager = clazz.getMethod("getScoreboardManager").invoke(asPlugin);
-                            setScoreboardMethod = manager.getClass().getMethod("setScoreboard", Player.class, String.class);
-                            animatedScoreboardPlugin = manager;
-                        } catch (Exception e4) {
-                            plugin.getLogger().warning("Não foi possível encontrar método setScoreboard no AnimatedScoreboard. " +
-                                "Scoreboards contextuais podem não funcionar. Verifique a versão do AnimatedScoreboard.");
-                            return;
-                        }
-                    }
+                    plugin.getLogger().warning("Não foi possível encontrar método setPlayerScoreboard no AnimatedScoreboard. " +
+                        "Scoreboards contextuais podem não funcionar. Verifique a versão do AnimatedScoreboard.");
                 }
             }
-
-            this.enabled = true;
-            plugin.getLogger().info("Integração com AnimatedScoreboard habilitada");
         } catch (Exception e) {
             plugin.getLogger().warning("Erro ao inicializar AnimatedScoreboard: " + e.getMessage());
         }

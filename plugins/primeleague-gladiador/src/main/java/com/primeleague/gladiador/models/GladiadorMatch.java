@@ -23,6 +23,9 @@ public class GladiadorMatch {
     private MatchState state;
     private int currentBorderSize;
     private BukkitTask borderTask;
+    // Tracking de kills e dano por player (para MVP e DAMAGE)
+    private Map<UUID, Integer> playerKills;  // playerUuid -> kills
+    private Map<UUID, Double> playerDamage; // playerUuid -> total damage dealt
 
     public GladiadorMatch(Arena arena) {
         this.matchId = UUID.randomUUID();
@@ -31,6 +34,8 @@ public class GladiadorMatch {
         this.alivePlayers = new HashSet<>(); // Acesso principalmente na thread principal
         this.state = MatchState.WAITING;
         this.currentBorderSize = arena.getInitialBorderSize();
+        this.playerKills = new ConcurrentHashMap<>(); // Thread-safe
+        this.playerDamage = new ConcurrentHashMap<>(); // Thread-safe
     }
 
     /**
@@ -190,5 +195,49 @@ public class GladiadorMatch {
 
     public void setBorderTask(BukkitTask borderTask) {
         this.borderTask = borderTask;
+    }
+
+    /**
+     * Incrementa kills de um player
+     * Grug Brain: Usar merge atômico para thread safety
+     */
+    public void incrementPlayerKills(UUID playerUuid) {
+        playerKills.merge(playerUuid, 1, Integer::sum);
+    }
+
+    /**
+     * Obtém kills de um player
+     */
+    public int getPlayerKills(UUID playerUuid) {
+        return playerKills.getOrDefault(playerUuid, 0);
+    }
+
+    /**
+     * Adiciona dano causado por um player
+     * Grug Brain: Usar merge atômico para thread safety
+     */
+    public void addPlayerDamage(UUID playerUuid, double damage) {
+        playerDamage.merge(playerUuid, damage, Double::sum);
+    }
+
+    /**
+     * Obtém dano total causado por um player
+     */
+    public double getPlayerDamage(UUID playerUuid) {
+        return playerDamage.getOrDefault(playerUuid, 0.0);
+    }
+
+    /**
+     * Obtém todos os player kills (para MVP)
+     */
+    public Map<UUID, Integer> getPlayerKills() {
+        return new java.util.HashMap<>(playerKills);
+    }
+
+    /**
+     * Obtém todos os player damage (para DAMAGE)
+     */
+    public Map<UUID, Double> getPlayerDamage() {
+        return new java.util.HashMap<>(playerDamage);
     }
 }

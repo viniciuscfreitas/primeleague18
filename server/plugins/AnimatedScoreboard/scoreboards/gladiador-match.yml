@@ -1,0 +1,122 @@
+scores:
+  hidden: true
+
+display:
+  title:
+    text:
+      - "&6&lGLADIADOR"
+    random: false
+    interval: 40
+    
+  line-1:
+    text:
+      - "&8&m━━━━━━━━━━━━━━━━━━"
+    random: false
+    interval: 200
+    score: 15
+    
+  line-2:
+    text:
+      - "&c&lEM COMBATE"
+    random: false
+    interval: 40
+    score: 14
+    
+  line-3:
+    text:
+      - " "
+    random: false
+    interval: 200
+    score: 13
+    
+  line-4:
+    text:
+      - "&7Arena: &e%gladiador_arena%"
+    random: false
+    interval: 40
+    score: 12
+    
+  line-5:
+    text:
+      - "&7Clans vivos: &a%gladiador_clans_alive%"
+    random: false
+    interval: 40
+    score: 11
+    
+  line-6:
+    text:
+      - "&7Players vivos: &a%gladiador_players_alive%"
+    random: false
+    interval: 40
+    score: 10
+    
+  line-7:
+    text:
+      - " "
+    random: false
+    interval: 200
+    score: 9
+    
+  line-8:
+    text:
+      - "&7Seu clan: &b%gladiador_my_clan%"
+    random: false
+    interval: 40
+    score: 8
+    
+  line-9:
+    text:
+      - "&7Kills do clan: &c%gladiador_my_clan_kills%"
+    random: false
+    interval: 40
+    score: 7
+    
+  line-10:
+    text:
+      - "&7Players do clan: &a%gladiador_my_clan_players%"
+    random: false
+    interval: 40
+    score: 6
+    
+  line-11:
+    text:
+      - " "
+    random: false
+    interval: 200
+    score: 5
+    
+  line-12:
+    text:
+      - "&7Tempo: &e%gladiador_time%"
+    random: false
+    interval: 40
+    score: 4
+    
+  line-13:
+    text:
+      - " "
+    random: false
+    interval: 200
+    score: 3
+    
+  line-14:
+    text:
+      - "&7www.primeleague.com.br"
+    random: false
+    interval: 200
+    score: 2
+    
+  line-15:
+    text:
+      - "&8&m━━━━━━━━━━━━━━━━━━"
+    random: false
+    interval: 200
+    score: 1
+
+
+
+
+
+
+
+

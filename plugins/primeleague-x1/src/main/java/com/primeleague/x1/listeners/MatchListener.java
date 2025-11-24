@@ -100,14 +100,23 @@ public class MatchListener implements Listener {
                 match.getPlayer2() : match.getPlayer1();
             
             // Verificar se deve penalizar ELO
-            boolean penalize = plugin.getConfig().getBoolean("match.penalize-disconnect", false);
+            boolean penalize = plugin.getConfig().getBoolean("match.penalize-disconnect", true);
             
-            if (!penalize && match.isRanked()) {
-                // Não penalizar ELO - apenas cancelar match
-                plugin.getMatchManager().cancelMatch(match);
-            } else {
-                // Penalizar: considerar como derrota
+            if (penalize && match.isRanked()) {
+                // Penalizar: considerar como derrota (perde ELO)
+                int penaltyElo = plugin.getConfig().getInt("match.disconnect-penalty-elo", 50);
+                plugin.getLogger().info("Player " + player.getName() + " desconectou em ranked match. Penalidade: -" + penaltyElo + " ELO");
                 plugin.getMatchManager().endMatch(match, opponentUuid);
+                
+                // Ban temporário (se configurado)
+                int banMinutes = plugin.getConfig().getInt("match.disconnect-ban-minutes", 0);
+                if (banMinutes > 0) {
+                    // TODO: Implementar ban via CoreAPI se necessário
+                    plugin.getLogger().info("Ban de " + banMinutes + " minutos seria aplicado (não implementado ainda)");
+                }
+            } else {
+                // Não penalizar - apenas cancelar match
+                plugin.getMatchManager().cancelMatch(match);
             }
 
             String msg = plugin.getConfig().getString("messages.match.disconnect", 
@@ -124,7 +133,8 @@ public class MatchListener implements Listener {
     }
 
     /**
-     * Previne dano entre players que não estão em match
+     * Previne dano entre players que não estão em match X1
+     * Grug Brain: Só interfere se AMBOS estão em match X1, senão deixa outros plugins gerenciarem
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
@@ -135,20 +145,33 @@ public class MatchListener implements Listener {
         Player victim = (Player) event.getEntity();
         Player attacker = (Player) event.getDamager();
 
-        // Verificar se ambos estão no mesmo match
+        // Verificar se ambos estão no mesmo match X1
         Match victimMatch = plugin.getMatchManager().getMatch(victim.getUniqueId());
         Match attackerMatch = plugin.getMatchManager().getMatch(attacker.getUniqueId());
 
-        if (victimMatch == null || attackerMatch == null || victimMatch != attackerMatch) {
-            // Não estão no mesmo match - cancelar dano
+        // Se nenhum está em match X1, não interferir (deixar outros plugins gerenciarem - ex: Gladiador)
+        if (victimMatch == null && attackerMatch == null) {
+            return; // Nenhum está em match X1 - não interferir
+        }
+
+        // Se apenas um está em match X1, não interferir (pode ser PvP normal ou outro plugin)
+        if ((victimMatch == null) != (attackerMatch == null)) {
+            return; // Apenas um está em match X1 - não interferir
+        }
+
+        // Ambos estão em match X1 - verificar se é o mesmo match
+        if (victimMatch != attackerMatch) {
+            // Estão em matches X1 diferentes - cancelar dano
             event.setCancelled(true);
             return;
         }
 
-        // Verificar se match está em andamento
+        // Ambos estão no mesmo match X1 - verificar se match está em andamento
         if (victimMatch.getStatus() != Match.MatchStatus.FIGHTING) {
+            // Match X1 não está em andamento - cancelar dano
             event.setCancelled(true);
         }
+        // Se match está FIGHTING, deixar dano passar (não cancelar)
     }
 }
 

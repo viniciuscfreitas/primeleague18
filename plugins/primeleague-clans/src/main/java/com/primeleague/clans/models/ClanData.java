@@ -25,6 +25,8 @@ public class ClanData {
     private Integer points;
     private Integer eventWinsCount;
     private Boolean blockedFromEvents;
+    private Integer shieldStartHour;
+    private Integer shieldEndHour;
 
     public ClanData() {
     }
@@ -164,6 +166,22 @@ public class ClanData {
 
     public void setBlockedFromEvents(Boolean blockedFromEvents) {
         this.blockedFromEvents = blockedFromEvents;
+    }
+
+    public Integer getShieldStartHour() {
+        return shieldStartHour;
+    }
+
+    public void setShieldStartHour(Integer shieldStartHour) {
+        this.shieldStartHour = shieldStartHour;
+    }
+
+    public Integer getShieldEndHour() {
+        return shieldEndHour;
+    }
+
+    public void setShieldEndHour(Integer shieldEndHour) {
+        this.shieldEndHour = shieldEndHour;
     }
 }
 

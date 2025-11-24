@@ -1,0 +1,42 @@
+# Primeleague Factions - Configuração Lendária
+
+power:
+  # Regeneração de power por minuto online (fallback, não usado se solo/clan configurados)
+  # 0.33 = +1 power a cada 3 minutos
+  # 1.0 = +1 power por minuto
+  regen-per-minute: 0.33
+
+  # Regeneração diferenciada: Solo vs Clã
+  # Solo: Regen mais rápido (incentiva grind solo)
+  solo-regen-per-minute: 0.8
+  # Clã: Regen mais lento por membro (incentiva coop)
+  clan-regen-per-minute: 0.4
+
+  # Power máximo por jogador
+  max-power: 50.0
+
+  # Power inicial
+  initial-power: 0.0
+
+  # Perda de power ao morrer
+  death-penalty: 4.0
+
+  # Mínimo de power (para não ficar negativo infinito)
+  min-power: -10.0
+
+claims:
+  # Mundo onde claims são permitidos
+  allowed-worlds:
+    - "world"
+    - "world_nether"
+    - "world_the_end"
+
+visuals:
+  # Partícula da borda (1.8)
+  border-particle: "FLAME"
+
+# Discord Integration (via PrimeleagueDiscord)
+discord:
+  enabled: false
+  channel-id: ""  # ID do canal Discord para notificações de facções
+  color: 3447003  # Azul padrão

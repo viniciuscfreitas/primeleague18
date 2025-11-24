@@ -1,0 +1,14 @@
+name: PrimeleagueFactions
+version: 1.0.0
+main: com.primeleague.factions.PrimeFactions
+api-version: 1.8
+author: Primeleague
+description: Sistema de Factions Lendário (Territórios, Power, Guerra)
+depend: [PrimeleagueCore, PrimeleagueClans]
+softdepend: [PrimeleagueDiscord, dynmap]
+
+commands:
+  f:
+    description: Comando principal de facções
+    usage: /f <subcomando>
+    aliases: [factions, fac]

@@ -10,23 +10,49 @@ spawn:
   exit-yaw: 0.0
   exit-pitch: 0.0
 
-# Arena Settings (VALORES DE TESTE - BAIXOS)
+# Arena Settings
 arena:
-  preparation-time: 30         # 30 segundos para teste (normal: 300)
-  initial-border-size: 100     # Border inicial menor para teste (normal: 500)
-  final-border-size: 20        # Border final
-  border-shrink-interval: 10   # Diminui a cada 10 segundos para teste (normal: 60)
-  max-duration: 300            # 5 minutos max para teste (normal: 1800)
+  preparation-time: 300         # Tempo de preparação em segundos (5 minutos)
+  initial-border-size: 500       # Tamanho inicial da border
+  final-border-size: 20          # Tamanho final da border
+  border-shrink-interval: 60     # Intervalo de redução da border em segundos
+  max-duration: 1800             # Duração máxima do match em segundos (30 minutos)
 
-# Match Settings (VALORES DE TESTE)
+# Match Settings
 match:
-  min-clans: 2                 # Mínimo 2 clans
-  max-players-per-clan: 10     # Max 10 por clan para teste (normal: 100)
-  cancel-on-disconnect: false  # Don't cancel, just eliminate player
+  min-clans: 2                   # Mínimo de clans para iniciar
+  max-players-per-clan: 100      # Máximo de players por clan
+  cancel-on-disconnect: false    # Não cancela match se player desconectar, apenas elimina
+  wait-time-minutes: 5           # Tempo de espera antes de iniciar preparação (em minutos)
 
-# Rewards (via Economy plugin) - VALORES DE TESTE
+# Rewards (via Economy plugin ou ClansManager)
 rewards:
-  winner-coins-per-player: 10000    # 10k coins para teste (normal: 1000000)
+  winner-coins-per-player: 1000000.0  # Coins por player vencedor (em dólares se Economy disponível)
+  winner-clan-balance: 100000000       # Balance do clan vencedor (em centavos)
+  event-points: 100                    # Pontos de evento para o clan vencedor
+
+  # Pontos por posição (F1 style)
+  position-points:
+    1: 25
+    2: 18
+    3: 15
+    4: 12
+    5: 10
+    6: 8
+    7: 6
+    8: 4
+    9: 2
+    10: 1
+
+  # Bônus de performance
+  performance-bonus:
+    mvp-clan: 10          # +10 pontos para o clan do MVP
+    top-damage-clan: 8    # +8 pontos para o clan do Top Damage
+
+  # Recompensas individuais (coins extras)
+  individual-rewards:
+    mvp-coins: 10000.0           # Coins extras para MVP
+    top-damage-coins: 7500.0     # Coins extras para Top Damage
 
 # Discord Integration (via PrimeleagueDiscord)
 discord:
@@ -36,23 +62,4 @@ discord:
 
 # Cache
 cache:
-  stats-duration: 300  # 5 minutes
-
-# Messages (PT-BR)
-messages:
-  join-success: "§aSeu clan entrou no Gladiador! {players} membros online."
-  leave-success: "§cSeu clan saiu do Gladiador."
-  event-started: "§6§lGLADIADOR INICIADO! {clans} clans na arena!"
-  preparation: "§eFase de preparação... PvP em {time}s"
-  preparation-end: "§c§lPvP ATIVADO! Boa sorte!"
-  clan-eliminated: "§cClan {clan} foi eliminado! Restam {remaining} clans."
-  winner: "§6§lClan {clan} venceu o Gladiador!"
-  no-clan: "§cVocê precisa estar em um clan para participar!"
-  event-running: "§cJá existe um evento em andamento!"
-  no-event: "§cNão há evento em andamento!"
-  no-arena: "§cNenhuma arena configurada! Use /glad arena create"
-  admin-only: "§cApenas administradores podem usar este comando!"
-  arena-created: "§aArena '{name}' criada com sucesso!"
-  arena-deleted: "§aArena '{name}' deletada!"
-  spawn-added: "§aSpawn point adicionado à arena '{name}'"
-  spectator-set: "§aSpectator spawn definido para arena '{name}'"
+  stats-duration: 300  # Duração do cache de stats em segundos (5 minutos)

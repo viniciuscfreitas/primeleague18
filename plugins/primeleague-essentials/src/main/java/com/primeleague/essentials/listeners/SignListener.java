@@ -1,6 +1,5 @@
 package com.primeleague.essentials.listeners;
 
-import com.primeleague.economy.EconomyAPI;
 import com.primeleague.essentials.managers.KitManager;
 import com.primeleague.essentials.managers.WarpManager;
 import org.bukkit.ChatColor;

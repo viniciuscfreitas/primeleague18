@@ -4,7 +4,6 @@ import com.primeleague.clans.ClansPlugin;
 import com.primeleague.clans.models.ClanData;
 import com.primeleague.core.CoreAPI;
 import com.primeleague.core.models.PlayerData;
-import com.primeleague.economy.EconomyAPI;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -97,21 +96,6 @@ public class ClansPlaceholderExpansion extends PlaceholderExpansion {
         // %clans_members_online% - Membros online
         if (identifier.equals("members_online")) {
             int online = getOnlineMembers(clan.getId());
-            return String.valueOf(online);
-        }
-
-        // %clans_balance% - Saldo do clan bank (se Economy habilitado)
-        if (identifier.equals("balance")) {
-            if (!EconomyAPI.isEnabled()) {
-                return "";
-            }
-            long balanceCents = plugin.getClansManager().getClanBalance(clan.getId());
-            double balance = balanceCents / 100.0;
-            return String.format("%.2f", balance);
-        }
-
-        // %clans_points% - Pontos do clan
-        if (identifier.equals("points")) {
             try {
                 int points = plugin.getClansManager().getClanPoints(clan.getId());
                 return String.valueOf(points);

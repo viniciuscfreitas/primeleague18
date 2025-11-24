@@ -1,0 +1,14 @@
+name: PrimeleaguePvP152
+version: 1.0.0
+main: com.primeleague.pvp152.PvP152Plugin
+api-version: 1.8
+author: Primeleague
+description: Replica PvP da versão 1.5.2 para Paper 1.8.8
+
+commands:
+  delay:
+    description: Comando principal do PvP152
+    usage: /<command> [help|ver|reset|reach|espada|knockback|bloqueio|critico|iframe|debug]
+    permission: pvp152.admin
+    permission-message: Você não tem permissão para usar este comando!
+

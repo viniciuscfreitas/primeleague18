@@ -29,6 +29,7 @@ public class GladiadorPlugin extends JavaPlugin {
     private DiscordIntegration discordIntegration;
     private TabIntegration tabIntegration;
     private ScoreboardIntegration scoreboardIntegration;
+    private com.primeleague.gladiador.managers.TitleManager titleManager;
 
     @Override
     public void onEnable() {
@@ -63,6 +64,7 @@ public class GladiadorPlugin extends JavaPlugin {
         // Inicializar integrações (soft dependencies)
         tabIntegration = new TabIntegration(this);
         scoreboardIntegration = new ScoreboardIntegration(this);
+        titleManager = new com.primeleague.gladiador.managers.TitleManager(this);
 
         // Carregar arenas do banco
         arenaManager.loadArenas();
@@ -83,10 +85,7 @@ public class GladiadorPlugin extends JavaPlugin {
             }, 6000L, 6000L); // A cada 5 minutos (6000 ticks)
         }
 
-        // PlaceholderAPI integration desabilitada temporariamente
-        // TODO: Implementar GladiadorPlaceholderExpansion estendendo PlaceholderExpansion
-        // e adicionar PlaceholderAPI como dependência no pom.xml
-        /*
+        // PlaceholderAPI integration (softdepend)
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             try {
                 new com.primeleague.gladiador.integrations.GladiadorPlaceholderExpansion(this).register();
@@ -95,7 +94,6 @@ public class GladiadorPlugin extends JavaPlugin {
                 getLogger().warning("Erro ao registrar PlaceholderAPI: " + e.getMessage());
             }
         }
-        */
 
         getLogger().info("PrimeleagueGladiador habilitado");
     }
@@ -162,14 +160,36 @@ public class GladiadorPlugin extends JavaPlugin {
                 "participations INTEGER NOT NULL DEFAULT 0, " +
                 "total_kills INTEGER NOT NULL DEFAULT 0, " +
                 "total_deaths INTEGER NOT NULL DEFAULT 0, " +
+                "season_points INTEGER NOT NULL DEFAULT 0, " +
                 "last_win TIMESTAMP, " +
                 "created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
                 "updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP" +
                 ")");
 
+            // Adicionar coluna season_points se não existir (migração)
+            try {
+                stmt.execute("ALTER TABLE gladiador_stats ADD COLUMN IF NOT EXISTS season_points INTEGER NOT NULL DEFAULT 0");
+            } catch (SQLException e) {
+                // Coluna já existe, ignorar
+            }
+
             // Índices para stats
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_gladiador_stats_wins " +
                 "ON gladiador_stats(wins DESC, total_kills DESC)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_gladiador_stats_season_points " +
+                "ON gladiador_stats(season_points DESC)");
+
+            // Tabela de tags temporárias
+            stmt.execute("CREATE TABLE IF NOT EXISTS gladiador_current_titles (" +
+                "player_uuid UUID PRIMARY KEY, " +
+                "title VARCHAR(16) NOT NULL, " +
+                "display VARCHAR(32) NOT NULL, " +
+                "expires_at TIMESTAMP" +
+                ")");
+
+            // Índice para tags
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_gladiador_titles_expires " +
+                "ON gladiador_current_titles(expires_at)");
 
             getLogger().info("Tabelas do Gladiador criadas/verificadas");
 
@@ -206,5 +226,9 @@ public class GladiadorPlugin extends JavaPlugin {
 
     public ScoreboardIntegration getScoreboardIntegration() {
         return scoreboardIntegration;
+    }
+
+    public com.primeleague.gladiador.managers.TitleManager getTitleManager() {
+        return titleManager;
     }
 }
