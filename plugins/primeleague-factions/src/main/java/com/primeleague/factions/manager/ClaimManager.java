@@ -30,11 +30,14 @@ public class ClaimManager {
     private final Map<ChunkKey, Integer> claimCache; // ChunkKey -> ClanID
     // Rastreia chunks onde solo players buildaram (ChunkKey -> UUID do player)
     private final Map<ChunkKey, UUID> soloBuildCache;
+    // Contador O(1) de claims por clã (otimização)
+    private final Map<Integer, Integer> clanClaimCount;
 
     public ClaimManager(PrimeFactions plugin) {
         this.plugin = plugin;
         this.claimCache = new ConcurrentHashMap<>();
         this.soloBuildCache = new ConcurrentHashMap<>();
+        this.clanClaimCount = new ConcurrentHashMap<>();
         loadClaims();
     }
 
@@ -57,6 +60,8 @@ public class ClaimManager {
 
                 ChunkKey key = new ChunkKey(world, x, z);
                 claimCache.put(key, clanId);
+                // Atualizar contador O(1)
+                clanClaimCount.merge(clanId, 1, Integer::sum);
                 count++;
             }
             plugin.getLogger().info("Carregados " + count + " claims.");
@@ -128,6 +133,8 @@ public class ClaimManager {
 
         // Update Cache
         claimCache.put(key, clanId);
+        // Atualizar contador O(1)
+        clanClaimCount.merge(clanId, 1, Integer::sum);
 
         // Notify Dynmap (async, não bloqueia)
         if (plugin.getDynmapIntegration() != null && plugin.getDynmapIntegration().isEnabled()) {
@@ -164,12 +171,15 @@ public class ClaimManager {
      */
     public boolean unclaimChunk(String world, int x, int z) {
         ChunkKey key = new ChunkKey(world, x, z);
-        if (!claimCache.containsKey(key)) {
+        Integer clanId = claimCache.get(key);
+        if (clanId == null) {
             return false;
         }
 
         // Update Cache
         claimCache.remove(key);
+        // Atualizar contador O(1)
+        clanClaimCount.computeIfPresent(clanId, (k, v) -> v > 0 ? v - 1 : 0);
 
         // Notify Dynmap (async, não bloqueia)
         if (plugin.getDynmapIntegration() != null && plugin.getDynmapIntegration().isEnabled()) {
@@ -206,6 +216,8 @@ public class ClaimManager {
 
         // Remove from cache
         claimCache.entrySet().removeIf(entry -> entry.getValue() == clanId);
+        // Limpar contador
+        clanClaimCount.remove(clanId);
 
         // Async DB Update
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -222,21 +234,13 @@ public class ClaimManager {
 
     /**
      * Gets the number of claims a clan has.
+     * O(1) - usa contador em memória
      *
      * @param clanId Clan ID
      * @return Number of claims
      */
     public int getClaimCount(int clanId) {
-        // This is O(N) on the map size.
-        // If this becomes slow, we should maintain a separate Map<ClanID, Count>.
-        // For < 10k claims, this is instant.
-        int count = 0;
-        for (Integer id : claimCache.values()) {
-            if (id == clanId) {
-                count++;
-            }
-        }
-        return count;
+        return clanClaimCount.getOrDefault(clanId, 0);
     }
 
     /**

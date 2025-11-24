@@ -102,27 +102,55 @@ public class FactionsCommand implements CommandExecutor {
         }
 
         Chunk chunk = player.getLocation().getChunk();
-        boolean success = plugin.getClaimManager().claimChunk(chunk.getWorld().getName(), chunk.getX(), chunk.getZ(), clan.getId());
+        String worldName = chunk.getWorld().getName();
 
-        if (success) {
-            player.sendMessage("§aTerritório conquistado!");
-            ParticleBorder.showChunkBorder(player, chunk.getWorld(), chunk.getX(), chunk.getZ(), Effect.FLAME);
-            
-            // Notificar Discord
-            if (plugin.getDiscordIntegration() != null && plugin.getDiscordIntegration().isEnabled()) {
-                int totalClaims = plugin.getClaimManager().getClaimCount(clan.getId());
-                plugin.getDiscordIntegration().sendTerritoryClaimed(
-                    clan.getName(),
-                    player.getName(),
-                    chunk.getX(),
-                    chunk.getZ(),
-                    chunk.getWorld().getName(),
-                    totalClaims
-                );
-            }
-        } else {
-            player.sendMessage("§cEste território já possui dono.");
+        // Validar mundo permitido
+        java.util.List<String> allowedWorlds = plugin.getConfig().getStringList("claims.allowed-worlds");
+        if (!allowedWorlds.isEmpty() && !allowedWorlds.contains(worldName)) {
+            player.sendMessage("§cClaims desativados neste mundo!");
+            return;
         }
+
+        // Validar power máximo (async para não bloquear main thread)
+        final int finalClanId = clan.getId();
+        final int chunkX = chunk.getX();
+        final int chunkZ = chunk.getZ();
+
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            double totalPower = plugin.getPowerManager().getClanTotalPower(finalClanId);
+            int currentClaims = plugin.getClaimManager().getClaimCount(finalClanId);
+            int maxClaims = (int) (totalPower / 10.0); // 1 claim = 10 power
+
+            // Voltar para main thread para claimar e enviar mensagens
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                if (maxClaims > 0 && currentClaims >= maxClaims) {
+                    player.sendMessage("§cClã sem power suficiente! Máximo: " + maxClaims + " claims (Power total: " + String.format("%.1f", totalPower) + ")");
+                    return;
+                }
+
+                boolean success = plugin.getClaimManager().claimChunk(worldName, chunkX, chunkZ, finalClanId);
+
+                if (success) {
+                    player.sendMessage("§aTerritório conquistado!");
+                    ParticleBorder.showChunkBorder(player, chunk.getWorld(), chunkX, chunkZ, Effect.FLAME);
+
+                    // Notificar Discord
+                    if (plugin.getDiscordIntegration() != null && plugin.getDiscordIntegration().isEnabled()) {
+                        int totalClaims = plugin.getClaimManager().getClaimCount(finalClanId);
+                        plugin.getDiscordIntegration().sendTerritoryClaimed(
+                            clan.getName(),
+                            player.getName(),
+                            chunkX,
+                            chunkZ,
+                            worldName,
+                            totalClaims
+                        );
+                    }
+                } else {
+                    player.sendMessage("§cEste território já possui dono.");
+                }
+            });
+        });
     }
 
     private void handleUnclaim(Player player) {
@@ -143,7 +171,7 @@ public class FactionsCommand implements CommandExecutor {
         boolean success = plugin.getClaimManager().unclaimChunk(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
         if (success) {
             player.sendMessage("§aTerritório abandonado.");
-            
+
             // Notificar Discord
             if (plugin.getDiscordIntegration() != null && plugin.getDiscordIntegration().isEnabled()) {
                 int totalClaims = plugin.getClaimManager().getClaimCount(clan.getId());
@@ -164,7 +192,7 @@ public class FactionsCommand implements CommandExecutor {
     private void handleMap(Player player) {
         player.sendMessage("§e§lMapa de Territórios (Raio 3):");
         Set<ChunkKey> claims = plugin.getClaimManager().getClaimsInRadius(player.getLocation(), 3);
-        
+
         // Visual feedback using particles for all nearby claims
         for (ChunkKey key : claims) {
             ParticleBorder.showChunkBorder(player, player.getWorld(), key.getX(), key.getZ(), Effect.HAPPY_VILLAGER);

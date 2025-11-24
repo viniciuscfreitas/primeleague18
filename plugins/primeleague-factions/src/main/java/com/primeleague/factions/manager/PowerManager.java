@@ -153,6 +153,32 @@ public class PowerManager implements Listener {
         return powerCache.getOrDefault(uuid, 0.0);
     }
 
+    /**
+     * Calcula power total de um clã (soma de todos os membros)
+     * Grug Brain: Query direta no DB (como getTotalKills) - inclui online + offline
+     * Usa cache quando possível para players online, mas busca do DB para offline
+     */
+    public double getClanTotalPower(int clanId) {
+        double total = 0.0;
+        try (Connection conn = CoreAPI.getDatabase().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                "SELECT COALESCE(SUM(u.power), 0) as total_power " +
+                "FROM clan_members cm " +
+                "JOIN users u ON cm.player_uuid = u.uuid " +
+                "WHERE cm.clan_id = ?")) {
+            stmt.setInt(1, clanId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    total = rs.getDouble("total_power");
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Erro ao calcular power total do clã " + clanId, e);
+        }
+        return total;
+    }
+
     private void loadPlayerPower(UUID uuid) {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try (Connection conn = CoreAPI.getDatabase().getConnection();

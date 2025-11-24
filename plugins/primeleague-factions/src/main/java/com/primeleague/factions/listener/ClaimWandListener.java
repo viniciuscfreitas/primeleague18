@@ -87,13 +87,13 @@ public class ClaimWandListener implements Listener {
         // Since I don't have the full Clans API in memory, I'll assume a method exists or query DB.
         // Ideally, PrimeFactions should have a helper for this.
         // For now, let's assume we can get it via ClansPlugin.
-        
+
         com.primeleague.clans.models.ClanData clan = plugin.getClansPlugin().getClansManager().getClanByMember(uuid);
         if (clan == null) {
             player.sendMessage(ChatColor.RED + "Você precisa ter um clã para claimar terras!");
             return;
         }
-        
+
         // Check Role (Leader/Mod only)
         // Assuming ClanMember has role info.
         // For simplicity in this iteration, let's allow any member or check leader.
@@ -110,44 +110,88 @@ public class ClaimWandListener implements Listener {
         int maxZ = Math.max(pos1.getChunk().getZ(), pos2.getChunk().getZ());
 
         int chunksToClaim = (maxX - minX + 1) * (maxZ - minZ + 1);
-        
-        // Check Power (Simple check for now)
-        // We need to implement PowerManager to check this properly.
-        // For now, let's just claim.
-        
-        int successCount = 0;
-        int failCount = 0;
 
-        for (int x = minX; x <= maxX; x++) {
-            for (int z = minZ; z <= maxZ; z++) {
-                boolean success = plugin.getClaimManager().claimChunk(pos1.getWorld().getName(), x, z, clan.getId());
-                if (success) {
-                    successCount++;
-                    // Show particles
-                    ParticleBorder.showChunkBorder(player, pos1.getWorld(), x, z, Effect.FLAME);
-                } else {
-                    failCount++;
+        // Validar mundo permitido
+        String worldName = pos1.getWorld().getName();
+        java.util.List<String> allowedWorlds = plugin.getConfig().getStringList("claims.allowed-worlds");
+        if (!allowedWorlds.isEmpty() && !allowedWorlds.contains(worldName)) {
+            player.sendMessage(ChatColor.RED + "Claims desativados neste mundo!");
+            return;
+        }
+
+        // Validar power máximo (async para não bloquear main thread)
+        final int finalClanId = clan.getId();
+        final String finalWorldName = worldName;
+
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            double totalPower = plugin.getPowerManager().getClanTotalPower(finalClanId);
+            int currentClaims = plugin.getClaimManager().getClaimCount(finalClanId);
+            int maxClaims = (int) (totalPower / 10.0); // 1 claim = 10 power
+
+            // Voltar para main thread para claimar e enviar mensagens
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                if (maxClaims > 0 && currentClaims >= maxClaims) {
+                    player.sendMessage(ChatColor.RED + "Clã sem power suficiente! Máximo: " + maxClaims + " claims (Power total: " + String.format("%.1f", totalPower) + ")");
+                    return;
                 }
-            }
-        }
 
-        player.sendMessage(ChatColor.GREEN + "Terras conquistadas: " + successCount);
-        if (failCount > 0) {
-            player.sendMessage(ChatColor.RED + "Falha ao conquistar: " + failCount + " (Já possuem dono)");
-        }
-        
-        // Notificar Discord apenas se houve sucesso (rate limitado por clan)
-        if (successCount > 0 && plugin.getDiscordIntegration() != null && plugin.getDiscordIntegration().isEnabled()) {
-            int totalClaims = plugin.getClaimManager().getClaimCount(clan.getId());
-            // Notificar apenas o primeiro chunk claimado (rate limit)
-            plugin.getDiscordIntegration().sendTerritoryClaimed(
-                clan.getName(),
-                player.getName(),
-                minX,
-                minZ,
-                pos1.getWorld().getName(),
-                totalClaims
-            );
-        }
+                // Verificar se há power suficiente para todos os chunks
+                int available = maxClaims > 0 ? (maxClaims - currentClaims) : Integer.MAX_VALUE;
+                if (maxClaims > 0) {
+                    if (available <= 0) {
+                        player.sendMessage(ChatColor.RED + "Clã sem power suficiente para claimar mais chunks!");
+                        return;
+                    }
+                    if (chunksToClaim > available) {
+                        player.sendMessage(ChatColor.YELLOW + "Aviso: Apenas " + available + " chunks podem ser claimados (limite de power).");
+                    }
+                }
+
+                int successCount = 0;
+                int failCount = 0;
+                int claimed = 0;
+
+                for (int x = minX; x <= maxX; x++) {
+                    for (int z = minZ; z <= maxZ; z++) {
+                        // Verificar limite de power durante o loop
+                        if (maxClaims > 0 && claimed >= available) {
+                            break;
+                        }
+
+                        boolean success = plugin.getClaimManager().claimChunk(finalWorldName, x, z, finalClanId);
+                        if (success) {
+                            successCount++;
+                            claimed++;
+                            // Show particles
+                            ParticleBorder.showChunkBorder(player, pos1.getWorld(), x, z, Effect.FLAME);
+                        } else {
+                            failCount++;
+                        }
+                    }
+                    if (maxClaims > 0 && claimed >= available) {
+                        break;
+                    }
+                }
+
+                player.sendMessage(ChatColor.GREEN + "Terras conquistadas: " + successCount);
+                if (failCount > 0) {
+                    player.sendMessage(ChatColor.RED + "Falha ao conquistar: " + failCount + " (Já possuem dono)");
+                }
+
+                // Notificar Discord apenas se houve sucesso (rate limitado por clan)
+                if (successCount > 0 && plugin.getDiscordIntegration() != null && plugin.getDiscordIntegration().isEnabled()) {
+                    int totalClaims = plugin.getClaimManager().getClaimCount(finalClanId);
+                    // Notificar apenas o primeiro chunk claimado (rate limit)
+                    plugin.getDiscordIntegration().sendTerritoryClaimed(
+                        clan.getName(),
+                        player.getName(),
+                        minX,
+                        minZ,
+                        finalWorldName,
+                        totalClaims
+                    );
+                }
+            });
+        });
     }
 }
