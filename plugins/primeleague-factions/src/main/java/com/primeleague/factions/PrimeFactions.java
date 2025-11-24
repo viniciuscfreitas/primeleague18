@@ -5,7 +5,6 @@ import com.primeleague.core.CoreAPI;
 import com.primeleague.factions.command.FactionsCommand;
 import com.primeleague.factions.integrations.DiscordIntegration;
 import com.primeleague.factions.integrations.DynmapIntegration;
-import com.primeleague.factions.listener.ClaimWandListener;
 import com.primeleague.factions.listener.FlyListener;
 import com.primeleague.factions.listener.GenBucketListener;
 import com.primeleague.factions.listener.ProtectionListener;
@@ -61,7 +60,6 @@ public class PrimeFactions extends JavaPlugin {
         this.dynmapIntegration.setup();
 
         // 5. Register Listeners
-        getServer().getPluginManager().registerEvents(new ClaimWandListener(this), this);
         getServer().getPluginManager().registerEvents(this.powerManager, this);
         getServer().getPluginManager().registerEvents(new ProtectionListener(this), this);
         getServer().getPluginManager().registerEvents(new GenBucketListener(this), this);

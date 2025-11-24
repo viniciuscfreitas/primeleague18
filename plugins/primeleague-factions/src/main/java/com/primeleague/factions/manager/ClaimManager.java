@@ -127,13 +127,14 @@ public class ClaimManager {
      */
     public boolean claimChunk(String world, int x, int z, int clanId) {
         ChunkKey key = new ChunkKey(world, x, z);
-        if (claimCache.containsKey(key)) {
+
+        // Operação atômica: putIfAbsent retorna null se não existia, ou o valor existente
+        Integer existing = claimCache.putIfAbsent(key, clanId);
+        if (existing != null) {
             return false; // Already claimed
         }
 
-        // Update Cache
-        claimCache.put(key, clanId);
-        // Atualizar contador O(1)
+        // Atualizar contador O(1) - só incrementa se claim foi bem-sucedido
         clanClaimCount.merge(clanId, 1, Integer::sum);
 
         // Notify Dynmap (async, não bloqueia)
@@ -152,9 +153,19 @@ public class ClaimManager {
                 stmt.setInt(4, clanId);
                 stmt.executeUpdate();
             } catch (SQLException e) {
-                plugin.getLogger().log(Level.SEVERE, "Erro ao salvar claim no banco!", e);
-                // Rollback cache if DB fails? For now, keep it simple (Grug).
-                // In a perfect world we would revert, but this is rare.
+                plugin.getLogger().log(Level.SEVERE, "Erro ao salvar claim no banco! Fazendo rollback do cache.", e);
+                // Rollback cache se DB falhar (consistência de dados)
+                // Precisa voltar para main thread para Dynmap
+                final ChunkKey finalKey = key;
+                final int finalClanId = clanId;
+                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    claimCache.remove(finalKey);
+                    clanClaimCount.computeIfPresent(finalClanId, (k, v) -> v > 0 ? v - 1 : 0);
+                    // Remover do Dynmap também
+                    if (plugin.getDynmapIntegration() != null && plugin.getDynmapIntegration().isEnabled()) {
+                        plugin.getDynmapIntegration().removeClaim(finalKey);
+                    }
+                });
             }
         });
 

@@ -12,10 +12,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-
-import java.util.Arrays;
 import java.util.Set;
 
 public class FactionsCommand implements CommandExecutor {
@@ -43,9 +39,6 @@ public class FactionsCommand implements CommandExecutor {
         String sub = args[0].toLowerCase();
 
         switch (sub) {
-            case "wand":
-                giveWand(player);
-                break;
             case "claim":
                 handleClaim(player, args);
                 break;
@@ -71,7 +64,6 @@ public class FactionsCommand implements CommandExecutor {
 
     private void sendHelp(Player player) {
         player.sendMessage("§e§lPrimeFactions §7- Comandos:");
-        player.sendMessage("§6/f wand §f- Receber a Golden Hoe de claim.");
         player.sendMessage("§6/f claim §f- Conquistar o chunk atual.");
         player.sendMessage("§6/f unclaim §f- Abandonar o chunk atual.");
         player.sendMessage("§6/f map §f- Ver mapa de territórios.");
@@ -79,25 +71,17 @@ public class FactionsCommand implements CommandExecutor {
         player.sendMessage("§6/f fly §f- Ativar/Desativar voo em território.");
     }
 
-    private void giveWand(Player player) {
-        ItemStack wand = new ItemStack(Material.GOLD_HOE);
-        ItemMeta meta = wand.getItemMeta();
-        meta.setDisplayName("§6§lCetro de Conquista");
-        meta.setLore(Arrays.asList(
-                "§7Use para conquistar terras.",
-                "§eBotão Esq: §fPosição 1",
-                "§eBotão Dir: §fPosição 2",
-                "§eShift+Dir: §fConquistar Área"
-        ));
-        wand.setItemMeta(meta);
-        player.getInventory().addItem(wand);
-        player.sendMessage("§aVocê recebeu o Cetro de Conquista!");
-    }
-
     private void handleClaim(Player player, String[] args) {
         com.primeleague.clans.models.ClanData clan = plugin.getClansPlugin().getClansManager().getClanByMember(player.getUniqueId());
         if (clan == null) {
             player.sendMessage("§cVocê precisa de um clã.");
+            return;
+        }
+
+        // Verificar permissões (Leader ou Officer apenas)
+        String role = plugin.getClansPlugin().getClansManager().getMemberRole(clan.getId(), player.getUniqueId());
+        if (role == null || (!role.equals("LEADER") && !role.equals("OFFICER"))) {
+            player.sendMessage("§cApenas líderes e oficiais podem claimar territórios!");
             return;
         }
 
@@ -123,6 +107,25 @@ public class FactionsCommand implements CommandExecutor {
 
             // Voltar para main thread para claimar e enviar mensagens
             plugin.getServer().getScheduler().runTask(plugin, () -> {
+                // Verificar se player ainda está online (pode ter saído durante async)
+                if (player == null || !player.isOnline()) {
+                    return;
+                }
+
+                // Verificar se clã ainda existe (pode ter sido deletado durante async)
+                com.primeleague.clans.models.ClanData currentClan = plugin.getClansPlugin().getClansManager().getClanByMember(player.getUniqueId());
+                if (currentClan == null || currentClan.getId() != finalClanId) {
+                    player.sendMessage("§cSeu clã não existe mais ou você foi removido.");
+                    return;
+                }
+
+                // Verificar role novamente (pode ter mudado durante async)
+                String currentRole = plugin.getClansPlugin().getClansManager().getMemberRole(finalClanId, player.getUniqueId());
+                if (currentRole == null || (!currentRole.equals("LEADER") && !currentRole.equals("OFFICER"))) {
+                    player.sendMessage("§cVocê não tem mais permissão para claimar territórios!");
+                    return;
+                }
+
                 if (maxClaims > 0 && currentClaims >= maxClaims) {
                     player.sendMessage("§cClã sem power suficiente! Máximo: " + maxClaims + " claims (Power total: " + String.format("%.1f", totalPower) + ")");
                     return;

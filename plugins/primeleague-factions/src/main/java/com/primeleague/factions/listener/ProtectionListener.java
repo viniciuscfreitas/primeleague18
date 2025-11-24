@@ -75,7 +75,6 @@ public class ProtectionListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onInteract(PlayerInteractEvent event) {
         if (event.getClickedBlock() == null) return;
-        if (event.getItem() != null && event.getItem().getType() == Material.GOLD_HOE) return; // Allow wand
 
         Location loc = event.getClickedBlock().getLocation();
 
