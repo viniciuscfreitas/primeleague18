@@ -1,0 +1,31 @@
+icons: {
+    }
+sets:
+    primeleague.claims:
+        hide: false
+        circles: {
+            }
+        deficon: default
+        areas: {
+            }
+        label: Territórios
+        markers: {
+            }
+        lines: {
+            }
+        layerprio: 10
+    markers:
+        hide: false
+        circles: {
+            }
+        deficon: default
+        areas: {
+            }
+        label: Marcadores
+        markers: {
+            }
+        lines: {
+            }
+        layerprio: 0
+playersets: {
+    }
