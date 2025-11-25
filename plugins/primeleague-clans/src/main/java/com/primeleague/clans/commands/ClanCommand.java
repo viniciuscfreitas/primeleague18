@@ -202,12 +202,14 @@ public class ClanCommand implements CommandExecutor {
 
     /**
      * /clan info [TAG]
+     * CORREÇÃO: Mostra informações do clan + status unificado do player (se for o próprio clan)
      */
     private boolean handleInfo(Player player, String[] args) {
         ClanData clan = null;
+        boolean isOwnClan = false; // Se está vendo o próprio clan
 
         if (args.length > 1) {
-            // Buscar por TAG
+            // Buscar por TAG (clan de outro player)
             String tagClean = ChatColor.stripColor(args[1]).toUpperCase();
             clan = plugin.getClansManager().getClanByTag(tagClean);
             if (clan == null) {
@@ -215,14 +217,31 @@ public class ClanCommand implements CommandExecutor {
                 return true;
             }
         } else {
-            // Mostrar clan do player
+            // Mostrar clan do player (seu próprio clan)
             clan = plugin.getClansManager().getClanByMember(player.getUniqueId());
             if (clan == null) {
                 player.sendMessage(ChatColor.RED + "Você não está em um clan.");
                 return true;
             }
+            isOwnClan = true; // É o próprio clan
         }
 
+        // CORREÇÃO: Se for o próprio clan, fazer tudo async (status + info do clan)
+        // Se for outro clan, mostrar info síncrona (padrão atual)
+        if (isOwnClan) {
+            showClanInfoWithStatusAsync(player, clan);
+            return true; // Retornar imediatamente - async vai mostrar tudo
+        }
+
+        // Para outro clan, mostrar info normalmente (síncrono - padrão existente)
+        showClanInfoSync(player, clan);
+        return true;
+    }
+
+    /**
+     * Mostra informações do clan de forma síncrona (padrão existente - para outros clans)
+     */
+    private void showClanInfoSync(Player player, ClanData clan) {
         // Buscar membros
         List<ClanMember> members = plugin.getClansManager().getMembers(clan.getId());
 
@@ -299,8 +318,318 @@ public class ClanCommand implements CommandExecutor {
                 player.sendMessage(ChatColor.YELLOW + "🛡 Shield: " + ChatColor.RED + "ZERADO");
             }
         }
+    }
 
-        return true;
+    /**
+     * DEPRECATED: Substituído por showClanInfoWithStatusAsync() que mostra tudo junto
+     * Mantido apenas para compatibilidade - não usar mais
+     */
+    @Deprecated
+    private void showPlayerStatusAsync(Player player) {
+        UUID playerUuid = player.getUniqueId();
+        final Player finalPlayer = player;
+
+        // Query async para não bloquear thread principal
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
+            @Override
+            public void run() {
+                // Buscar dados do player (query async)
+                PlayerData playerData = CoreAPI.getPlayer(playerUuid);
+                if (playerData == null) {
+                    return; // Player não encontrado (não deveria acontecer)
+                }
+
+                // Obter power (usar cache - thread-safe, não precisa async)
+                // CORREÇÃO: PowerManager usa ConcurrentHashMap cache, então é seguro acessar de qualquer thread
+                org.bukkit.plugin.Plugin factionsPlugin =
+                    plugin.getServer().getPluginManager().getPlugin("PrimeleagueFactions");
+                Double powerValue = null;
+                Double maxPowerValue = null;
+                if (factionsPlugin != null && factionsPlugin.isEnabled()) {
+                    com.primeleague.factions.PrimeFactions pf =
+                        (com.primeleague.factions.PrimeFactions) factionsPlugin;
+                    powerValue = pf.getPowerManager().getPower(playerUuid);
+                    maxPowerValue = pf.getPowerManager().getMaxPower(playerUuid);
+                }
+
+                // Obter role no clan (usar cache do ClansManager - thread-safe)
+                ClanData clan = plugin.getClansManager().getClanByMember(playerUuid);
+                String role = null;
+                if (clan != null) {
+                    role = plugin.getClansManager().getMemberRole(clan.getId(), playerUuid);
+                }
+
+                // Preparar dados para enviar (tornar final para usar na lambda)
+                final PlayerData finalPlayerData = playerData;
+                final Double finalPower = powerValue;
+                final Double finalMaxPower = maxPowerValue;
+                final String finalRole = role;
+
+                // Voltar à thread principal para enviar mensagens (Bukkit API não é thread-safe)
+                plugin.getServer().getScheduler().runTask(plugin, new Runnable() {
+                    @Override
+                    public void run() {
+                        // Verificar se player ainda está online
+                        if (!finalPlayer.isOnline()) {
+                            return;
+                        }
+
+                        // Header
+                        finalPlayer.sendMessage(ChatColor.GOLD + "=== " + ChatColor.YELLOW + "Seu Status" + ChatColor.GOLD + " ===");
+
+                        // ELO
+                        int elo = finalPlayerData.getElo();
+                        finalPlayer.sendMessage(ChatColor.YELLOW + "ELO: " + ChatColor.WHITE + elo);
+
+                        // Dinheiro
+                        long moneyCents = finalPlayerData.getMoney();
+                        double money = moneyCents / 100.0;
+                        finalPlayer.sendMessage(ChatColor.YELLOW + "Dinheiro: " + ChatColor.WHITE + String.format("$%.2f", money));
+
+                        // Power (Factions - se disponível)
+                        if (finalPower != null && finalMaxPower != null) {
+                            finalPlayer.sendMessage(ChatColor.YELLOW + "Power: " + ChatColor.WHITE +
+                                String.format("%.1f", finalPower) + "/" + String.format("%.1f", finalMaxPower));
+                        }
+
+                        // Stats de combate (K/D)
+                        int kills = finalPlayerData.getKills();
+                        int deaths = finalPlayerData.getDeaths();
+                        double kdr = deaths > 0 ? (double) kills / deaths : kills;
+                        finalPlayer.sendMessage(ChatColor.YELLOW + "K/D: " + ChatColor.WHITE +
+                            kills + "/" + deaths + ChatColor.GRAY + " (" + String.format("%.2f", kdr) + ")");
+
+                        // Killstreak atual e melhor
+                        int killstreak = finalPlayerData.getKillstreak();
+                        int bestKillstreak = finalPlayerData.getBestKillstreak();
+                        if (killstreak > 0 || bestKillstreak > 0) {
+                            finalPlayer.sendMessage(ChatColor.YELLOW + "Killstreak: " + ChatColor.WHITE + killstreak +
+                                ChatColor.GRAY + " (Melhor: " + bestKillstreak + ")");
+                        }
+
+                        // Role no clan (se estiver em um)
+                        if (finalRole != null) {
+                            String roleDisplay = getRoleDisplay(finalRole);
+                            finalPlayer.sendMessage(ChatColor.YELLOW + "Cargo: " + roleDisplay);
+                        }
+
+                        // Espaço visual antes das informações do clan
+                        finalPlayer.sendMessage("");
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * Mostra informações do clan + status do player de forma async (para próprio clan)
+     * CORREÇÃO: Tudo async para não bloquear thread, ordem garantida (status primeiro, depois clan info)
+     */
+    private void showClanInfoWithStatusAsync(final Player player, final ClanData clan) {
+        UUID playerUuid = player.getUniqueId();
+        final int clanId = clan.getId();
+
+        // Query async para não bloquear thread principal
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, new Runnable() {
+            @Override
+            public void run() {
+                // Buscar dados do player (query async)
+                PlayerData playerData = CoreAPI.getPlayer(playerUuid);
+                if (playerData == null) {
+                    // Se não encontrou player, ainda mostrar info do clan
+                    plugin.getServer().getScheduler().runTask(plugin, new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!player.isOnline()) return;
+                            showClanInfoComplete(player, clan);
+                        }
+                    });
+                    return;
+                }
+
+                // Obter power (cache - thread-safe)
+                org.bukkit.plugin.Plugin factionsPlugin =
+                    plugin.getServer().getPluginManager().getPlugin("PrimeleagueFactions");
+                Double powerValue = null;
+                Double maxPowerValue = null;
+                if (factionsPlugin != null && factionsPlugin.isEnabled()) {
+                    com.primeleague.factions.PrimeFactions pf =
+                        (com.primeleague.factions.PrimeFactions) factionsPlugin;
+                    powerValue = pf.getPowerManager().getPower(playerUuid);
+                    maxPowerValue = pf.getPowerManager().getMaxPower(playerUuid);
+                }
+
+                // Obter role no clan (cache - thread-safe)
+                String role = plugin.getClansManager().getMemberRole(clanId, playerUuid);
+
+                // Buscar nome do leader (query async)
+                PlayerData leaderData = CoreAPI.getPlayer(clan.getLeaderUuid());
+                String leaderName = leaderData != null ? leaderData.getName() : "Desconhecido";
+
+                // Preparar dados para enviar
+                final PlayerData finalPlayerData = playerData;
+                final Double finalPower = powerValue;
+                final Double finalMaxPower = maxPowerValue;
+                final String finalRole = role;
+                final String finalLeaderName = leaderName;
+
+                // Voltar à thread principal para enviar mensagens
+                plugin.getServer().getScheduler().runTask(plugin, new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!player.isOnline()) return;
+
+                        // 1. Mostrar status do player primeiro
+                        showPlayerStatusSync(player, finalPlayerData, finalPower, finalMaxPower, finalRole);
+
+                        // Espaço visual
+                        player.sendMessage("");
+
+                        // 2. Mostrar informações do clan depois
+                        showClanInfoComplete(player, clan, finalLeaderName);
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * Mostra informações completas do clan (header + restante) com nome do leader já obtido
+     */
+    private void showClanInfoComplete(Player player, ClanData clan, String leaderName) {
+        // Buscar membros (cache - rápido)
+        List<ClanMember> members = plugin.getClansManager().getMembers(clan.getId());
+
+        // Header
+        player.sendMessage(ChatColor.GOLD + "=== " + ChatColor.YELLOW + clan.getName() + ChatColor.GOLD + " ===");
+        player.sendMessage(ChatColor.YELLOW + "Tag: " + ChatColor.WHITE + clan.getTag());
+        player.sendMessage(ChatColor.YELLOW + "Membros: " + ChatColor.WHITE + members.size());
+
+        // ELO médio do clan (com cache)
+        double avgElo = plugin.getClansManager().getClanAverageElo(clan.getId());
+        player.sendMessage(ChatColor.YELLOW + "ELO Médio: " + ChatColor.WHITE + String.format("%.0f", avgElo));
+        player.sendMessage(ChatColor.YELLOW + "Líder: " + ChatColor.WHITE + leaderName);
+
+        // Resto das informações
+        showClanInfoRemaining(player, clan);
+    }
+
+    /**
+     * Mostra informações completas do clan (header + restante) - busca leader síncrono
+     */
+    private void showClanInfoComplete(Player player, ClanData clan) {
+        PlayerData leaderData = CoreAPI.getPlayer(clan.getLeaderUuid());
+        String leaderName = leaderData != null ? leaderData.getName() : "Desconhecido";
+        showClanInfoComplete(player, clan, leaderName);
+    }
+
+    /**
+     * Mostra informações restantes do clan (compartilhado entre sync e async)
+     */
+    private void showClanInfoRemaining(Player player, ClanData clan) {
+        if (clan.getCreatedAt() != null) {
+            player.sendMessage(ChatColor.YELLOW + "Criado em: " + ChatColor.GRAY + dateFormat.format(clan.getCreatedAt()));
+        }
+
+        if (clan.getDescription() != null && !clan.getDescription().isEmpty()) {
+            player.sendMessage(ChatColor.YELLOW + "Descrição: " + ChatColor.GRAY + clan.getDescription());
+        }
+
+        // Pontos e eventos ganhos
+        int points = plugin.getClansManager().getClanPoints(clan.getId());
+        player.sendMessage(ChatColor.YELLOW + "Pontos: " + ChatColor.WHITE + points);
+        Integer eventWinsCount = clan.getEventWinsCount();
+        if (eventWinsCount != null && eventWinsCount > 0) {
+            player.sendMessage(ChatColor.YELLOW + "Vitórias em Eventos: " + ChatColor.WHITE + eventWinsCount);
+        }
+
+        // Eventos ganhos por tipo
+        java.util.Map<String, Integer> winsByEvent = plugin.getClansManager().getClanEventWinsByEvent(clan.getId());
+        if (!winsByEvent.isEmpty()) {
+            StringBuilder eventsStr = new StringBuilder();
+            eventsStr.append(ChatColor.YELLOW).append("Eventos Ganhos: ").append(ChatColor.GRAY);
+            int count = 0;
+            for (java.util.Map.Entry<String, Integer> entry : winsByEvent.entrySet()) {
+                if (count > 0) eventsStr.append(", ");
+                eventsStr.append(entry.getKey()).append(" (x").append(entry.getValue()).append(")");
+                count++;
+                if (count >= 10) break; // Limitar a 10 eventos
+            }
+            player.sendMessage(eventsStr.toString());
+        }
+
+        // Status de bloqueio
+        if (plugin.getClansManager().isClanBlockedFromEvents(clan.getId())) {
+            player.sendMessage(ChatColor.RED + "⚠ Clan bloqueado de participar de eventos!");
+        }
+
+        // Info de Factions (territórios) - se disponível
+        org.bukkit.plugin.Plugin factionsPlugin =
+            plugin.getServer().getPluginManager().getPlugin("PrimeleagueFactions");
+        if (factionsPlugin != null && factionsPlugin.isEnabled()) {
+            com.primeleague.factions.PrimeFactions pf =
+                (com.primeleague.factions.PrimeFactions) factionsPlugin;
+
+            // Territórios
+            int claims = pf.getClaimManager().getClaimCount(clan.getId());
+            double totalPower = pf.getPowerManager().getClanTotalPower(clan.getId());
+            int maxClaims = (int) (totalPower / 10.0);
+            player.sendMessage(ChatColor.YELLOW + "Territórios: " + ChatColor.WHITE + claims + "/" + maxClaims +
+                ChatColor.GRAY + " (" + String.format("%.1f", totalPower) + " power)");
+
+            // Shield
+            long shieldMinutes = pf.getShieldManager().getRemainingMinutes(clan.getId());
+            if (shieldMinutes > 0) {
+                String shieldText = pf.getShieldManager().formatRemaining(clan.getId());
+                player.sendMessage(ChatColor.YELLOW + "🛡 Shield: " + ChatColor.WHITE + shieldText);
+            } else {
+                player.sendMessage(ChatColor.YELLOW + "🛡 Shield: " + ChatColor.RED + "ZERADO");
+            }
+        }
+    }
+
+    /**
+     * Mostra status do player de forma síncrona (já com dados carregados)
+     */
+    private void showPlayerStatusSync(Player player, PlayerData playerData, Double power, Double maxPower, String role) {
+        // Header
+        player.sendMessage(ChatColor.GOLD + "=== " + ChatColor.YELLOW + "Seu Status" + ChatColor.GOLD + " ===");
+
+        // ELO
+        int elo = playerData.getElo();
+        player.sendMessage(ChatColor.YELLOW + "ELO: " + ChatColor.WHITE + elo);
+
+        // Dinheiro
+        long moneyCents = playerData.getMoney();
+        double money = moneyCents / 100.0;
+        player.sendMessage(ChatColor.YELLOW + "Dinheiro: " + ChatColor.WHITE + String.format("$%.2f", money));
+
+        // Power (Factions - se disponível)
+        if (power != null && maxPower != null) {
+            player.sendMessage(ChatColor.YELLOW + "Power: " + ChatColor.WHITE +
+                String.format("%.1f", power) + "/" + String.format("%.1f", maxPower));
+        }
+
+        // Stats de combate (K/D)
+        int kills = playerData.getKills();
+        int deaths = playerData.getDeaths();
+        double kdr = deaths > 0 ? (double) kills / deaths : kills;
+        player.sendMessage(ChatColor.YELLOW + "K/D: " + ChatColor.WHITE +
+            kills + "/" + deaths + ChatColor.GRAY + " (" + String.format("%.2f", kdr) + ")");
+
+        // Killstreak atual e melhor
+        int killstreak = playerData.getKillstreak();
+        int bestKillstreak = playerData.getBestKillstreak();
+        if (killstreak > 0 || bestKillstreak > 0) {
+            player.sendMessage(ChatColor.YELLOW + "Killstreak: " + ChatColor.WHITE + killstreak +
+                ChatColor.GRAY + " (Melhor: " + bestKillstreak + ")");
+        }
+
+        // Role no clan (se estiver em um)
+        if (role != null) {
+            String roleDisplay = getRoleDisplay(role);
+            player.sendMessage(ChatColor.YELLOW + "Cargo: " + roleDisplay);
+        }
     }
 
     /**

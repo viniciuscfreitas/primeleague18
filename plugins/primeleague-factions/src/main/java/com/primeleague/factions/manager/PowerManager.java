@@ -154,6 +154,13 @@ public class PowerManager implements Listener {
     }
 
     /**
+     * Obtém max power do player (do cache ou padrão)
+     */
+    public double getMaxPower(UUID uuid) {
+        return maxPowerCache.getOrDefault(uuid, maxPowerDefault);
+    }
+
+    /**
      * Calcula power total de um clã (soma de todos os membros)
      * Grug Brain: Query direta no DB (como getTotalKills) - inclui online + offline
      * Usa cache quando possível para players online, mas busca do DB para offline
