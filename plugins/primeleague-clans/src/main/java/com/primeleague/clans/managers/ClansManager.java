@@ -176,7 +176,7 @@ public class ClansManager {
              PreparedStatement stmt = conn.prepareStatement(
                 "SELECT id, name, tag, tag_clean, leader_uuid, created_at, description, " +
                 "discord_channel_id, discord_role_id, home_world, home_x, home_y, home_z, " +
-                "points, event_wins_count, blocked_from_events, shield_start_hour, shield_end_hour " +
+                "points, event_wins_count, blocked_from_events " +
                 "FROM clans WHERE id = ?")) {
             stmt.setInt(1, clanId);
 
@@ -201,7 +201,7 @@ public class ClansManager {
              PreparedStatement stmt = conn.prepareStatement(
                 "SELECT id, name, tag, tag_clean, leader_uuid, created_at, description, " +
                 "discord_channel_id, discord_role_id, home_world, home_x, home_y, home_z, " +
-                "points, event_wins_count, blocked_from_events, shield_start_hour, shield_end_hour " +
+                "points, event_wins_count, blocked_from_events " +
                 "FROM clans WHERE UPPER(tag_clean) = ?")) {
             stmt.setString(1, tagClean);
 
@@ -234,7 +234,7 @@ public class ClansManager {
              PreparedStatement stmt = conn.prepareStatement(
                 "SELECT c.id, c.name, c.tag, c.tag_clean, c.leader_uuid, c.created_at, c.description, " +
                 "c.discord_channel_id, c.discord_role_id, c.home_world, c.home_x, c.home_y, c.home_z, " +
-                "c.points, c.event_wins_count, c.blocked_from_events, c.shield_start_hour, c.shield_end_hour " +
+                "c.points, c.event_wins_count, c.blocked_from_events " +
                 "FROM clans c JOIN clan_members cm ON c.id = cm.clan_id " +
                 "WHERE cm.player_uuid = ?")) {
             stmt.setObject(1, playerUuid);
@@ -595,15 +595,8 @@ public class ClansManager {
             clan.setBlockedFromEvents(blockedFromEvents);
         }
 
-        // Shield
-        int shieldStart = rs.getInt("shield_start_hour");
-        if (!rs.wasNull()) {
-            clan.setShieldStartHour(shieldStart);
-        }
-        int shieldEnd = rs.getInt("shield_end_hour");
-        if (!rs.wasNull()) {
-            clan.setShieldEndHour(shieldEnd);
-        }
+        // Shield é gerenciado pelo Factions (ShieldManager), não mais pelo Clans
+        // Mantido como null no ClanData para compatibilidade, mas não buscado do banco
 
         return clan;
     }
