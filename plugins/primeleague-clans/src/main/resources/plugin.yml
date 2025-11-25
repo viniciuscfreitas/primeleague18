@@ -5,7 +5,7 @@ api-version: 1.8
 author: Primeleague
 description: Sistema de Clans para servidor Primeleague
 depend: [PrimeleagueCore]
-softdepend: [PlaceholderAPI, PrimeleagueDiscord, PrimeleagueEconomy]
+softdepend: [PlaceholderAPI, PrimeleagueDiscord, PrimeleagueEconomy, PrimeleagueFactions]
 
 commands:
   clan:

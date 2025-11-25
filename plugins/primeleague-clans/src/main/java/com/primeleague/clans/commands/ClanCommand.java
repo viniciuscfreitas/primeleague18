@@ -32,9 +32,11 @@ public class ClanCommand implements CommandExecutor {
 
     private final ClansPlugin plugin;
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+    private final ClanTerritoryHandler territoryHandler;
 
     public ClanCommand(ClansPlugin plugin) {
         this.plugin = plugin;
+        this.territoryHandler = new ClanTerritoryHandler(plugin);
     }
 
     @Override
@@ -92,6 +94,27 @@ public class ClanCommand implements CommandExecutor {
                 return handleTag(player, args);
             case "admin":
                 return handleAdmin(player, args);
+            // Comandos de territórios (Factions integrado)
+            case "territorio":
+            case "territorios":
+            case "claims":
+                return territoryHandler.handleTerritorio(player, args);
+            case "claim":
+                return territoryHandler.handleClaim(player, args);
+            case "unclaim":
+                return territoryHandler.handleUnclaim(player, args);
+            case "mapa":
+            case "map":
+                return territoryHandler.handleMapa(player, args);
+            case "power":
+                return territoryHandler.handlePower(player, args);
+            case "shield":
+                return territoryHandler.handleShield(player, args);
+            case "upgrade":
+            case "upgrades":
+                return territoryHandler.handleUpgrade(player, args);
+            case "fly":
+                return territoryHandler.handleFly(player, args);
             default:
                 sendHelp(player);
                 return true;
@@ -251,6 +274,30 @@ public class ClanCommand implements CommandExecutor {
         // Status de bloqueio
         if (plugin.getClansManager().isClanBlockedFromEvents(clan.getId())) {
             player.sendMessage(ChatColor.RED + "⚠ Clan bloqueado de participar de eventos!");
+        }
+
+        // Info de Factions (territórios) - se disponível
+        org.bukkit.plugin.Plugin factionsPlugin =
+            plugin.getServer().getPluginManager().getPlugin("PrimeleagueFactions");
+        if (factionsPlugin != null && factionsPlugin.isEnabled()) {
+            com.primeleague.factions.PrimeFactions pf =
+                (com.primeleague.factions.PrimeFactions) factionsPlugin;
+
+            // Territórios
+            int claims = pf.getClaimManager().getClaimCount(clan.getId());
+            double totalPower = pf.getPowerManager().getClanTotalPower(clan.getId());
+            int maxClaims = (int) (totalPower / 10.0);
+            player.sendMessage(ChatColor.YELLOW + "Territórios: " + ChatColor.WHITE + claims + "/" + maxClaims +
+                ChatColor.GRAY + " (" + String.format("%.1f", totalPower) + " power)");
+
+            // Shield
+            long shieldMinutes = pf.getShieldManager().getRemainingMinutes(clan.getId());
+            if (shieldMinutes > 0) {
+                String shieldText = pf.getShieldManager().formatRemaining(clan.getId());
+                player.sendMessage(ChatColor.YELLOW + "🛡 Shield: " + ChatColor.WHITE + shieldText);
+            } else {
+                player.sendMessage(ChatColor.YELLOW + "🛡 Shield: " + ChatColor.RED + "ZERADO");
+            }
         }
 
         return true;
@@ -1401,6 +1448,20 @@ public class ClanCommand implements CommandExecutor {
         player.sendMessage(ChatColor.YELLOW + "/clan banco" + ChatColor.WHITE + " - Ver saldo do banco");
         player.sendMessage(ChatColor.YELLOW + "/clan depositar <valor>" + ChatColor.WHITE + " - Deposita dinheiro");
         player.sendMessage(ChatColor.YELLOW + "/clan sacar <valor>" + ChatColor.WHITE + " - Saca dinheiro");
+
+        // Comandos de territórios (se Factions estiver disponível)
+        if (territoryHandler.isFactionsEnabled()) {
+            player.sendMessage("");
+            player.sendMessage(ChatColor.GOLD + "=== Territórios ===");
+            player.sendMessage(ChatColor.YELLOW + "/clan territorio" + ChatColor.WHITE + " - Info completa de territórios");
+            player.sendMessage(ChatColor.YELLOW + "/clan claim" + ChatColor.WHITE + " - Conquistar território");
+            player.sendMessage(ChatColor.YELLOW + "/clan unclaim" + ChatColor.WHITE + " - Abandonar território");
+            player.sendMessage(ChatColor.YELLOW + "/clan mapa" + ChatColor.WHITE + " - Ver mapa de territórios");
+            player.sendMessage(ChatColor.YELLOW + "/clan power" + ChatColor.WHITE + " - Ver power do clan");
+            player.sendMessage(ChatColor.YELLOW + "/clan shield [horas]" + ChatColor.WHITE + " - Ver/ativar shield");
+            player.sendMessage(ChatColor.YELLOW + "/clan upgrade" + ChatColor.WHITE + " - Menu de upgrades");
+            player.sendMessage(ChatColor.GRAY + "Use " + ChatColor.YELLOW + "/f" + ChatColor.GRAY + " para comandos rápidos");
+        }
     }
 
     /**

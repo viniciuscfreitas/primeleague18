@@ -96,7 +96,16 @@
             <systemPath>${project.basedir}/../primeleague-discord/target/primeleague-discord-1.0.0.jar</systemPath>
             <optional>true</optional>
         </dependency>
-        
+        <!-- PrimeleagueFactions (system scope for compile - softdepend) -->
+        <dependency>
+            <groupId>com.primeleague</groupId>
+            <artifactId>primeleague-factions</artifactId>
+            <version>1.0.0</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../primeleague-factions/target/primeleague-factions-1.0.0.jar</systemPath>
+            <optional>true</optional>
+        </dependency>
+
         <!-- PlaceholderAPI -->
         <dependency>
             <groupId>me.clip</groupId>
