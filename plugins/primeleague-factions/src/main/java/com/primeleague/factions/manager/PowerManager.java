@@ -166,7 +166,7 @@ public class PowerManager implements Listener {
     public double getClanTotalPower(int clanId) {
         double total = 0.0;
         try {
-            java.util.List<com.primeleague.clans.models.ClanMember> members = 
+            java.util.List<com.primeleague.clans.models.ClanMember> members =
                 plugin.getClansPlugin().getClansManager().getMembers(clanId);
             for (com.primeleague.clans.models.ClanMember member : members) {
                 total += powerCache.getOrDefault(member.getPlayerUuid(), 0.0);
