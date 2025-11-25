@@ -5,10 +5,10 @@ import org.bukkit.ChatColor;
 /**
  * Helper para padronizar mensagens em todos os plugins
  * Grug Brain: Métodos estáticos simples, retorna strings formatadas
- * 
+ *
  * Formato padronizado:
  * - Erro: §c✗ §7mensagem
- * - Sucesso: §a✓ §7mensagem  
+ * - Sucesso: §a✓ §7mensagem
  * - Info: §eℹ §7mensagem
  * - Aviso: §6⚠ §7mensagem
  */
@@ -44,9 +44,10 @@ public class MessageHelper {
 
     /**
      * Formata valor destacado (para uso em mensagens)
+     * CORREÇÃO: Não adiciona GRAY no final para permitir uso dentro de outras mensagens
      */
     public static String highlight(String value) {
-        return ChatColor.YELLOW + value + ChatColor.GRAY;
+        return ChatColor.YELLOW + value;
     }
 
     /**

@@ -171,7 +171,7 @@ public class ClanCommand implements CommandExecutor {
             return true;
         }
 
-        player.sendMessage(MessageHelper.success("Clan " + MessageHelper.highlight(nome) + " criado com sucesso! Tag: " + MessageHelper.highlight(tag)));
+        player.sendMessage(MessageHelper.success("Clan " + MessageHelper.highlight(nome) + ChatColor.GRAY + " criado com sucesso! Tag: " + MessageHelper.highlight(tag)));
         return true;
     }
 
@@ -194,7 +194,7 @@ public class ClanCommand implements CommandExecutor {
 
         // Remover do clan
         if (plugin.getClansManager().removeMember(clan.getId(), player.getUniqueId())) {
-            player.sendMessage(MessageHelper.success("Você saiu do clan " + MessageHelper.highlight(clan.getName()) + "."));
+            player.sendMessage(MessageHelper.success("Você saiu do clan " + MessageHelper.highlight(clan.getName()) + ChatColor.GRAY + "."));
         } else {
             player.sendMessage(MessageHelper.error("Erro ao sair do clan."));
         }
@@ -708,8 +708,8 @@ public class ClanCommand implements CommandExecutor {
 
         // Criar invite
         if (plugin.getClansManager().invitePlayer(clan.getId(), target.getUniqueId(), player.getUniqueId())) {
-            player.sendMessage(MessageHelper.success("Convite enviado para " + MessageHelper.highlight(target.getName()) + "!"));
-            target.sendMessage(MessageHelper.info("Você recebeu um convite do clan " + MessageHelper.highlight(clan.getName()) + " (" + clan.getTag() + ")!"));
+            player.sendMessage(MessageHelper.success("Convite enviado para " + MessageHelper.highlight(target.getName()) + ChatColor.GRAY + "!"));
+            target.sendMessage(MessageHelper.info("Você recebeu um convite do clan " + MessageHelper.highlight(clan.getName()) + ChatColor.GRAY + " (" + clan.getTag() + ")!"));
             target.sendMessage(ChatColor.GRAY + "Use " + MessageHelper.highlight("/clan aceitar " + clan.getTag()) + ChatColor.GRAY + " para aceitar.");
         } else {
             player.sendMessage(MessageHelper.error("Erro ao enviar convite."));
@@ -775,7 +775,7 @@ public class ClanCommand implements CommandExecutor {
 
         // Aceitar invite
         if (plugin.getClansManager().acceptInvite(clanId, player.getUniqueId())) {
-            player.sendMessage(MessageHelper.success("Você entrou no clan " + MessageHelper.highlight(clan.getName()) + " (" + clan.getTag() + ")!"));
+            player.sendMessage(MessageHelper.success("Você entrou no clan " + MessageHelper.highlight(clan.getName()) + ChatColor.GRAY + " (" + clan.getTag() + ")!"));
         } else {
             player.sendMessage(MessageHelper.error("Erro ao aceitar convite. O convite pode ter expirado."));
         }

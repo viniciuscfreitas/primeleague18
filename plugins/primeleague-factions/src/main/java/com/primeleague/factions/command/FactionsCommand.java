@@ -205,7 +205,7 @@ public class FactionsCommand implements CommandExecutor {
                 }
 
                 if (maxClaims > 0 && currentClaims >= maxClaims) {
-                    player.sendMessage(MessageHelper.error("Clã sem power suficiente! Máximo: " + MessageHelper.highlight(String.valueOf(maxClaims)) + " claims (Power total: " + String.format("%.1f", totalPower) + ")"));
+                    player.sendMessage(MessageHelper.error("Clã sem power suficiente! Máximo: " + MessageHelper.highlight(String.valueOf(maxClaims)) + ChatColor.GRAY + " claims (Power total: " + String.format("%.1f", totalPower) + ")"));
                     return;
                 }
 
@@ -307,7 +307,7 @@ public class FactionsCommand implements CommandExecutor {
 
         // Se já tem confirmação pendente, avisar
         if (pending != null && pending.type == ActionType.UNCLAIM) {
-            player.sendMessage(MessageHelper.warning("Confirmação pendente! Use " + MessageHelper.highlight("/f confirm") + " para confirmar."));
+            player.sendMessage(MessageHelper.warning("Confirmação pendente! Use " + MessageHelper.highlight("/f confirm") + ChatColor.GRAY + " para confirmar."));
             player.sendMessage(ChatColor.GRAY + "Ou espere 30 segundos para a confirmação expirar.");
             return;
         }
@@ -320,7 +320,7 @@ public class FactionsCommand implements CommandExecutor {
             chunk.getZ()
         ));
         player.sendMessage(MessageHelper.warning("ATENÇÃO: Você está prestes a abandonar este território!"));
-        player.sendMessage(MessageHelper.info("Use " + MessageHelper.highlight("/f confirm") + " para confirmar ou espere 30 segundos para cancelar."));
+        player.sendMessage(MessageHelper.info("Use " + MessageHelper.highlight("/f confirm") + ChatColor.GRAY + " para confirmar ou espere 30 segundos para cancelar."));
         player.sendMessage(ChatColor.GRAY + "Território: " + ChatColor.WHITE + chunk.getWorld().getName() + ChatColor.GRAY + " (" + chunk.getX() + ", " + chunk.getZ() + ")");
     }
 
@@ -422,8 +422,8 @@ public class FactionsCommand implements CommandExecutor {
             long balance = plugin.getClansPlugin().getClansManager().getClanBalance(clan.getId());
 
             if (balance < cost) {
-                player.sendMessage(MessageHelper.error("Saldo insuficiente! Custo: " + MessageHelper.highlight("$" + String.format("%.2f", cost/100.0)) + 
-                    " | Saldo: $" + String.format("%.2f", balance/100.0)));
+                player.sendMessage(MessageHelper.error("Saldo insuficiente! Custo: " + MessageHelper.highlight("$" + String.format("%.2f", cost/100.0)) +
+                    ChatColor.GRAY + " | Saldo: $" + String.format("%.2f", balance/100.0)));
                 return;
             }
 
@@ -433,7 +433,7 @@ public class FactionsCommand implements CommandExecutor {
 
                 plugin.getServer().getScheduler().runTask(plugin, () -> {
                     if (success) {
-                        player.sendMessage(MessageHelper.success("🛡 Shield ativado por " + MessageHelper.highlight(hours + "h") + "!"));
+                        player.sendMessage(MessageHelper.success("🛡 Shield ativado por " + MessageHelper.highlight(hours + "h") + ChatColor.GRAY + "!"));
 
                         // Mostrar ActionBar uma vez após ativar (feedback imediato)
                         long newRemaining = plugin.getShieldManager().getRemainingMinutes(clan.getId());
