@@ -96,8 +96,9 @@ public class ShieldManager {
     /**
      * Retorna minutos restantes do shield (0 se não tem ou acabou)
      * Grug Brain: Durante Golden Hours (00h-06h), shield pausa automaticamente
+     * Thread-safe: synchronized para evitar race conditions
      */
-    public long getRemainingMinutes(int clanId) {
+    public synchronized long getRemainingMinutes(int clanId) {
         Long expiresAt = shieldCache.get(clanId);
         if (expiresAt == null || expiresAt <= System.currentTimeMillis()) {
             return 0;
