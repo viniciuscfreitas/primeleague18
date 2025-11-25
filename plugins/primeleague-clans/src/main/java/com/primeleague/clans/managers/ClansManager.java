@@ -767,22 +767,10 @@ public class ClansManager {
     }
 
     /**
-     * Define horário do shield do clan
+     * Shield é gerenciado pelo Factions (ShieldManager)
+     * Este método foi removido - shield agora usa shield_expires_at na tabela clans
+     * Use plugin.getServer().getPluginManager().getPlugin("PrimeleagueFactions") para acessar ShieldManager
      */
-    public boolean setClanShield(int clanId, int startHour, int endHour) {
-        try (Connection conn = CoreAPI.getDatabase().getConnection();
-             PreparedStatement stmt = conn.prepareStatement(
-                "UPDATE clans SET shield_start_hour = ?, shield_end_hour = ? WHERE id = ?")) {
-            stmt.setInt(1, startHour);
-            stmt.setInt(2, endHour);
-            stmt.setInt(3, clanId);
-            int rows = stmt.executeUpdate();
-            return rows > 0;
-        } catch (SQLException e) {
-            plugin.getLogger().severe("Erro ao definir shield do clan: " + e.getMessage());
-            return false;
-        }
-    }
 
     /**
      * Calcula ELO médio do clan em tempo real (com cache TTL 30s)
