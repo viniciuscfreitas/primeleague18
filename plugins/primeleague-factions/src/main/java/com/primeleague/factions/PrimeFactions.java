@@ -30,6 +30,7 @@ public class PrimeFactions extends JavaPlugin {
     private FlyManager flyManager;
     private UpgradeManager upgradeManager;
     private ShieldManager shieldManager;
+    private FactionsCommand factionsCommand;
 
     @Override
     public void onEnable() {
@@ -72,9 +73,11 @@ public class PrimeFactions extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new FlyListener(this), this);
         getServer().getPluginManager().registerEvents(new com.primeleague.factions.listener.UpgradeGUIListener(this), this);
         getServer().getPluginManager().registerEvents(new com.primeleague.factions.listener.UpgradeEffectListener(this), this);
+        getServer().getPluginManager().registerEvents(new com.primeleague.factions.listener.ConfirmationCleanupListener(this), this);
 
         // 6. Register Commands
-        getCommand("f").setExecutor(new FactionsCommand(this));
+        this.factionsCommand = new FactionsCommand(this);
+        getCommand("f").setExecutor(this.factionsCommand);
 
         // 7. Clean Discord rate limit cache periodically (every 5 minutes)
         if (discordIntegration != null && discordIntegration.isDiscordEnabled()) {
@@ -144,6 +147,10 @@ public class PrimeFactions extends JavaPlugin {
 
     public ShieldManager getShieldManager() {
         return shieldManager;
+    }
+
+    public FactionsCommand getFactionsCommand() {
+        return factionsCommand;
     }
 
     private void setupDatabase() {

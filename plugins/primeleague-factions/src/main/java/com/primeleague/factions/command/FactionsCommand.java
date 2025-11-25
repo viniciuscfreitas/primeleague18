@@ -13,13 +13,59 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import java.util.Set;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class FactionsCommand implements CommandExecutor {
 
     private final PrimeFactions plugin;
 
+    /**
+     * Confirmações pendentes: UUID do player -> Ação pendente
+     * Grug Brain: Sistema simples com timeout de 30 segundos
+     */
+    private final Map<UUID, PendingConfirmation> pendingConfirmations;
+    private static final long CONFIRMATION_TIMEOUT_MS = 30000; // 30 segundos
+
     public FactionsCommand(PrimeFactions plugin) {
         this.plugin = plugin;
+        this.pendingConfirmations = new ConcurrentHashMap<>();
+
+        // CORREÇÃO: Task periódica para limpar confirmações expiradas (a cada 30s)
+        // Segue padrão do projeto (PunishManager, QueueManager)
+        plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+            cleanupExpiredConfirmations();
+        }, 600L, 600L); // A cada 30 segundos (600 ticks)
+    }
+
+    /**
+     * Ação de confirmação pendente
+     * CORREÇÃO: Armazenar coordenadas ao invés de Chunk (evita desatualização)
+     */
+    private static class PendingConfirmation {
+        final ActionType type;
+        final long timestamp;
+        final String worldName;
+        final int chunkX;
+        final int chunkZ;
+
+        PendingConfirmation(ActionType type, String worldName, int chunkX, int chunkZ) {
+            this.type = type;
+            this.worldName = worldName;
+            this.chunkX = chunkX;
+            this.chunkZ = chunkZ;
+            this.timestamp = System.currentTimeMillis();
+        }
+
+        boolean isExpired() {
+            return System.currentTimeMillis() - timestamp > CONFIRMATION_TIMEOUT_MS;
+        }
+    }
+
+    private enum ActionType {
+        UNCLAIM,
+        SHIELD_REMOVE
     }
 
     @Override
@@ -43,7 +89,7 @@ public class FactionsCommand implements CommandExecutor {
                 handleClaim(player, args);
                 break;
             case "unclaim":
-                handleUnclaim(player);
+                handleUnclaim(player, args);
                 break;
             case "map":
                 handleMap(player);
@@ -59,6 +105,9 @@ public class FactionsCommand implements CommandExecutor {
                 break;
             case "shield":
                 handleShield(player, args);
+                break;
+            case "confirm":
+                handleConfirm(player);
                 break;
             default:
                 sendHelp(player);
@@ -77,6 +126,7 @@ public class FactionsCommand implements CommandExecutor {
         player.sendMessage("§6/f fly §f- Ativar/Desativar voo em território.");
         player.sendMessage("§6/f upgrade §f- Abrir menu de upgrades.");
         player.sendMessage("§6/f shield [horas] §f- Ver/Ativar shield do clã.");
+        player.sendMessage("§6/f confirm §f- Confirmar ação destrutiva pendente.");
     }
 
     private void handleUpgrade(Player player) {
@@ -183,7 +233,56 @@ public class FactionsCommand implements CommandExecutor {
         });
     }
 
-    private void handleUnclaim(Player player) {
+    /**
+     * Handle /f confirm - Confirma ação destrutiva pendente
+     */
+    private void handleConfirm(Player player) {
+        // Limpar confirmações expiradas
+        cleanupExpiredConfirmations();
+
+        UUID playerUuid = player.getUniqueId();
+        PendingConfirmation pending = pendingConfirmations.remove(playerUuid);
+
+        if (pending == null) {
+            player.sendMessage("§cNenhuma confirmação pendente!");
+            return;
+        }
+
+        if (pending.isExpired()) {
+            player.sendMessage("§cConfirmação expirada! Execute o comando novamente.");
+            return;
+        }
+
+        // Processar confirmação baseada no tipo
+        if (pending.type == ActionType.UNCLAIM) {
+            // CORREÇÃO: Validar novamente antes de executar
+            com.primeleague.clans.models.ClanData clan =
+                plugin.getClansPlugin().getClansManager().getClanByMember(player.getUniqueId());
+            if (clan == null) {
+                player.sendMessage("§cVocê não está mais em um clan.");
+                return;
+            }
+
+            // CORREÇÃO: Verificar se chunk ainda existe e pertence ao clan
+            org.bukkit.World world = plugin.getServer().getWorld(pending.worldName);
+            if (world == null) {
+                player.sendMessage("§cMundo não encontrado!");
+                return;
+            }
+
+            Chunk chunk = world.getChunkAt(pending.chunkX, pending.chunkZ);
+            int ownerId = plugin.getClaimManager().getClanAt(chunk);
+
+            if (ownerId != clan.getId() && !player.hasPermission("factions.admin")) {
+                player.sendMessage("§cEste território não pertence mais ao seu clan.");
+                return;
+            }
+
+            executeUnclaim(player, chunk, clan);
+        }
+    }
+
+    private void handleUnclaim(Player player, String[] args) {
         com.primeleague.clans.models.ClanData clan = plugin.getClansPlugin().getClansManager().getClanByMember(player.getUniqueId());
         if (clan == null) {
             player.sendMessage("§cVocê precisa de um clã.");
@@ -198,6 +297,36 @@ public class FactionsCommand implements CommandExecutor {
             return;
         }
 
+        // Limpar confirmações expiradas
+        cleanupExpiredConfirmations();
+
+        // Verificar se há confirmação pendente
+        UUID playerUuid = player.getUniqueId();
+        PendingConfirmation pending = pendingConfirmations.get(playerUuid);
+
+        // Se já tem confirmação pendente, avisar
+        if (pending != null && pending.type == ActionType.UNCLAIM) {
+            player.sendMessage("§eConfirmação pendente! Use §6/f confirm §epara confirmar.");
+            player.sendMessage("§7Ou espere 30 segundos para a confirmação expirar.");
+            return;
+        }
+
+        // CORREÇÃO: Armazenar coordenadas ao invés de Chunk (evita desatualização)
+        pendingConfirmations.put(playerUuid, new PendingConfirmation(
+            ActionType.UNCLAIM,
+            chunk.getWorld().getName(),
+            chunk.getX(),
+            chunk.getZ()
+        ));
+        player.sendMessage("§c⚠ ATENÇÃO: Você está prestes a abandonar este território!");
+        player.sendMessage("§eUse §6/f confirm §epara confirmar ou espere 30 segundos para cancelar.");
+        player.sendMessage("§7Território: §f" + chunk.getWorld().getName() + " §7(" + chunk.getX() + ", " + chunk.getZ() + ")");
+    }
+
+    /**
+     * Executa o unclaim após confirmação
+     */
+    private void executeUnclaim(Player player, Chunk chunk, com.primeleague.clans.models.ClanData clan) {
         boolean success = plugin.getClaimManager().unclaimChunk(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
         if (success) {
             player.sendMessage("§aTerritório abandonado.");
@@ -217,6 +346,21 @@ public class FactionsCommand implements CommandExecutor {
         } else {
             player.sendMessage("§cEste território não estava conquistado.");
         }
+    }
+
+    /**
+     * Limpa confirmações expiradas
+     */
+    private void cleanupExpiredConfirmations() {
+        pendingConfirmations.entrySet().removeIf(entry -> entry.getValue().isExpired());
+    }
+
+    /**
+     * Limpa confirmação pendente de um player específico
+     * CORREÇÃO: Método público para listener de PlayerQuitEvent
+     */
+    public void clearPendingConfirmation(java.util.UUID playerUuid) {
+        pendingConfirmations.remove(playerUuid);
     }
 
     private void handleMap(Player player) {
