@@ -5,6 +5,7 @@ import com.primeleague.clans.models.ClanData;
 import com.primeleague.clans.models.ClanMember;
 import com.primeleague.core.CoreAPI;
 import com.primeleague.core.models.PlayerData;
+import com.primeleague.core.util.MessageHelper;
 // import com.primeleague.economy.EconomyAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -42,7 +43,7 @@ public class ClanCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage(ChatColor.RED + "Este comando só pode ser usado por jogadores.");
+            sender.sendMessage(MessageHelper.error("Este comando só pode ser usado por jogadores."));
             return true;
         }
 
@@ -126,7 +127,7 @@ public class ClanCommand implements CommandExecutor {
      */
     private boolean handleCriar(Player player, String[] args) {
         if (args.length < 3) {
-            player.sendMessage(ChatColor.RED + "Uso: /clan criar <nome> <tag>");
+            player.sendMessage(MessageHelper.error("Uso: /clan criar <nome> <tag>"));
             return true;
         }
 
@@ -141,36 +142,36 @@ public class ClanCommand implements CommandExecutor {
 
         // Validar nome
         if (nome.length() < 1 || nome.length() > 50) {
-            player.sendMessage(ChatColor.RED + "Nome do clan deve ter entre 1 e 50 caracteres.");
+            player.sendMessage(MessageHelper.error("Nome do clan deve ter entre 1 e 50 caracteres."));
             return true;
         }
 
         // Validar tag
         String tagClean = ChatColor.stripColor(tag);
         if (tagClean.length() != 3) {
-            player.sendMessage(ChatColor.RED + "Tag do clan deve ter exatamente 3 caracteres (sem contar cores).");
+            player.sendMessage(MessageHelper.error("Tag do clan deve ter exatamente 3 caracteres (sem contar cores)."));
             return true;
         }
         if (tag.length() > 20) {
-            player.sendMessage(ChatColor.RED + "Tag completa (com cores) não pode ter mais de 20 caracteres.");
+            player.sendMessage(MessageHelper.error("Tag completa (com cores) não pode ter mais de 20 caracteres."));
             return true;
         }
 
         // Verificar se já está em clan
         ClanData existingClan = plugin.getClansManager().getClanByMember(player.getUniqueId());
         if (existingClan != null) {
-            player.sendMessage(ChatColor.RED + "Você já está em um clan! Use /clan sair primeiro.");
+            player.sendMessage(MessageHelper.error("Você já está em um clan! Use /clan sair primeiro."));
             return true;
         }
 
         // Criar clan
         ClanData clan = plugin.getClansManager().createClan(nome, tag, player.getUniqueId());
         if (clan == null) {
-            player.sendMessage(ChatColor.RED + "Erro ao criar clan. Verifique se a tag já existe.");
+            player.sendMessage(MessageHelper.error("Erro ao criar clan. Verifique se a tag já existe."));
             return true;
         }
 
-        player.sendMessage(ChatColor.GREEN + "Clan " + ChatColor.YELLOW + nome + ChatColor.GREEN + " criado com sucesso! Tag: " + ChatColor.YELLOW + tag);
+        player.sendMessage(MessageHelper.success("Clan " + MessageHelper.highlight(nome) + " criado com sucesso! Tag: " + MessageHelper.highlight(tag)));
         return true;
     }
 
@@ -180,22 +181,22 @@ public class ClanCommand implements CommandExecutor {
     private boolean handleSair(Player player) {
         ClanData clan = plugin.getClansManager().getClanByMember(player.getUniqueId());
         if (clan == null) {
-            player.sendMessage(ChatColor.RED + "Você não está em um clan.");
+            player.sendMessage(MessageHelper.error("Você não está em um clan."));
             return true;
         }
 
         // Verificar se é leader
         String role = plugin.getClansManager().getMemberRole(clan.getId(), player.getUniqueId());
         if ("LEADER".equals(role)) {
-            player.sendMessage(ChatColor.RED + "Você é o líder do clan! Use /clan transferir para transferir a liderança antes de sair.");
+            player.sendMessage(MessageHelper.error("Você é o líder do clan! Use /clan transferir para transferir a liderança antes de sair."));
             return true;
         }
 
         // Remover do clan
         if (plugin.getClansManager().removeMember(clan.getId(), player.getUniqueId())) {
-            player.sendMessage(ChatColor.GREEN + "Você saiu do clan " + ChatColor.YELLOW + clan.getName() + ChatColor.GREEN + ".");
+            player.sendMessage(MessageHelper.success("Você saiu do clan " + MessageHelper.highlight(clan.getName()) + "."));
         } else {
-            player.sendMessage(ChatColor.RED + "Erro ao sair do clan.");
+            player.sendMessage(MessageHelper.error("Erro ao sair do clan."));
         }
         return true;
     }
@@ -213,14 +214,14 @@ public class ClanCommand implements CommandExecutor {
             String tagClean = ChatColor.stripColor(args[1]).toUpperCase();
             clan = plugin.getClansManager().getClanByTag(tagClean);
             if (clan == null) {
-                player.sendMessage(ChatColor.RED + "Clan não encontrado com a tag: " + args[1]);
+                player.sendMessage(MessageHelper.error("Clan não encontrado com a tag: " + args[1]));
                 return true;
             }
         } else {
             // Mostrar clan do player (seu próprio clan)
             clan = plugin.getClansManager().getClanByMember(player.getUniqueId());
             if (clan == null) {
-                player.sendMessage(ChatColor.RED + "Você não está em um clan.");
+                player.sendMessage(MessageHelper.error("Você não está em um clan."));
                 return true;
             }
             isOwnClan = true; // É o próprio clan
@@ -640,19 +641,19 @@ public class ClanCommand implements CommandExecutor {
 
         if (args.length > 1) {
             // Buscar por nome (simplificado)
-            player.sendMessage(ChatColor.RED + "Busca por nome ainda não implementada. Use sem argumentos para ver membros do seu clan.");
+            player.sendMessage(MessageHelper.info("Busca por nome ainda não implementada. Use sem argumentos para ver membros do seu clan."));
             return true;
         } else {
             clan = plugin.getClansManager().getClanByMember(player.getUniqueId());
             if (clan == null) {
-                player.sendMessage(ChatColor.RED + "Você não está em um clan.");
+                player.sendMessage(MessageHelper.error("Você não está em um clan."));
                 return true;
             }
         }
 
         List<ClanMember> members = plugin.getClansManager().getMembers(clan.getId());
         if (members.isEmpty()) {
-            player.sendMessage(ChatColor.RED + "Nenhum membro encontrado.");
+            player.sendMessage(MessageHelper.error("Nenhum membro encontrado."));
             return true;
         }
 
@@ -674,44 +675,44 @@ public class ClanCommand implements CommandExecutor {
      */
     private boolean handleConvidar(Player player, String[] args) {
         if (args.length < 2) {
-            player.sendMessage(ChatColor.RED + "Uso: /clan convidar <player>");
+            player.sendMessage(MessageHelper.error("Uso: /clan convidar <player>"));
             return true;
         }
 
         ClanData clan = plugin.getClansManager().getClanByMember(player.getUniqueId());
         if (clan == null) {
-            player.sendMessage(ChatColor.RED + "Você não está em um clan.");
+            player.sendMessage(MessageHelper.error("Você não está em um clan."));
             return true;
         }
 
         // Verificar permissões (Leader ou Officer)
         String role = plugin.getClansManager().getMemberRole(clan.getId(), player.getUniqueId());
         if (!"LEADER".equals(role) && !"OFFICER".equals(role)) {
-            player.sendMessage(ChatColor.RED + "Apenas líderes e oficiais podem convidar jogadores.");
+            player.sendMessage(MessageHelper.error("Apenas líderes e oficiais podem convidar jogadores."));
             return true;
         }
 
         // Buscar player
         Player target = Bukkit.getPlayer(args[1]);
         if (target == null) {
-            player.sendMessage(ChatColor.RED + "Player não encontrado: " + args[1]);
+            player.sendMessage(MessageHelper.error("Player não encontrado: " + args[1]));
             return true;
         }
 
         // Verificar se já está em clan
         ClanData targetClan = plugin.getClansManager().getClanByMember(target.getUniqueId());
         if (targetClan != null) {
-            player.sendMessage(ChatColor.RED + target.getName() + " já está em um clan.");
+            player.sendMessage(MessageHelper.error(target.getName() + " já está em um clan."));
             return true;
         }
 
         // Criar invite
         if (plugin.getClansManager().invitePlayer(clan.getId(), target.getUniqueId(), player.getUniqueId())) {
-            player.sendMessage(ChatColor.GREEN + "Convite enviado para " + ChatColor.YELLOW + target.getName() + ChatColor.GREEN + "!");
-            target.sendMessage(ChatColor.YELLOW + "Você recebeu um convite do clan " + ChatColor.GOLD + clan.getName() + ChatColor.YELLOW + " (" + clan.getTag() + ChatColor.YELLOW + ")!");
-            target.sendMessage(ChatColor.GRAY + "Use " + ChatColor.YELLOW + "/clan aceitar " + clan.getTag() + ChatColor.GRAY + " para aceitar.");
+            player.sendMessage(MessageHelper.success("Convite enviado para " + MessageHelper.highlight(target.getName()) + "!"));
+            target.sendMessage(MessageHelper.info("Você recebeu um convite do clan " + MessageHelper.highlight(clan.getName()) + " (" + clan.getTag() + ")!"));
+            target.sendMessage(ChatColor.GRAY + "Use " + MessageHelper.highlight("/clan aceitar " + clan.getTag()) + ChatColor.GRAY + " para aceitar.");
         } else {
-            player.sendMessage(ChatColor.RED + "Erro ao enviar convite.");
+            player.sendMessage(MessageHelper.error("Erro ao enviar convite."));
         }
 
         return true;
@@ -724,13 +725,13 @@ public class ClanCommand implements CommandExecutor {
         // Verificar se já está em clan
         ClanData existingClan = plugin.getClansManager().getClanByMember(player.getUniqueId());
         if (existingClan != null) {
-            player.sendMessage(ChatColor.RED + "Você já está em um clan!");
+            player.sendMessage(MessageHelper.error("Você já está em um clan!"));
             return true;
         }
 
         List<Integer> invites = plugin.getClansManager().getPendingInvites(player.getUniqueId());
         if (invites.isEmpty()) {
-            player.sendMessage(ChatColor.RED + "Você não tem convites pendentes.");
+            player.sendMessage(MessageHelper.info("Você não tem convites pendentes."));
             return true;
         }
 
@@ -762,21 +763,21 @@ public class ClanCommand implements CommandExecutor {
         }
 
         if (clanId == -1) {
-            player.sendMessage(ChatColor.RED + "Você não tem convite do clan com a tag: " + args[1]);
+            player.sendMessage(MessageHelper.error("Você não tem convite do clan com a tag: " + args[1]));
             return true;
         }
 
         ClanData clan = plugin.getClansManager().getClan(clanId);
         if (clan == null) {
-            player.sendMessage(ChatColor.RED + "Clan não encontrado.");
+            player.sendMessage(MessageHelper.error("Clan não encontrado."));
             return true;
         }
 
         // Aceitar invite
         if (plugin.getClansManager().acceptInvite(clanId, player.getUniqueId())) {
-            player.sendMessage(ChatColor.GREEN + "Você entrou no clan " + ChatColor.YELLOW + clan.getName() + ChatColor.GREEN + " (" + clan.getTag() + ChatColor.GREEN + ")!");
+            player.sendMessage(MessageHelper.success("Você entrou no clan " + MessageHelper.highlight(clan.getName()) + " (" + clan.getTag() + ")!"));
         } else {
-            player.sendMessage(ChatColor.RED + "Erro ao aceitar convite. O convite pode ter expirado.");
+            player.sendMessage(MessageHelper.error("Erro ao aceitar convite. O convite pode ter expirado."));
         }
 
         return true;

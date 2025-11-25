@@ -1,6 +1,7 @@
 package com.primeleague.factions.command;
 
 import com.primeleague.clans.models.ClanData;
+import com.primeleague.core.util.MessageHelper;
 import com.primeleague.factions.PrimeFactions;
 import com.primeleague.factions.util.ChunkKey;
 import com.primeleague.factions.util.ParticleBorder;
@@ -71,7 +72,7 @@ public class FactionsCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage("§cApenas jogadores.");
+            sender.sendMessage(MessageHelper.error("Apenas jogadores podem usar este comando."));
             return true;
         }
 
@@ -132,14 +133,14 @@ public class FactionsCommand implements CommandExecutor {
     private void handleUpgrade(Player player) {
         com.primeleague.clans.models.ClanData clan = plugin.getClansPlugin().getClansManager().getClanByMember(player.getUniqueId());
         if (clan == null) {
-            player.sendMessage("§cVocê precisa de um clã.");
+            player.sendMessage(MessageHelper.error("Você precisa estar em um clã para usar este comando."));
             return;
         }
 
         // Verificar permissões (Leader ou Officer apenas)
         String role = plugin.getClansPlugin().getClansManager().getMemberRole(clan.getId(), player.getUniqueId());
         if (role == null || (!role.equals("LEADER") && !role.equals("OFFICER"))) {
-            player.sendMessage("§cApenas líderes e oficiais podem gerenciar upgrades!");
+            player.sendMessage(MessageHelper.error("Apenas líderes e oficiais podem gerenciar upgrades."));
             return;
         }
 
@@ -151,14 +152,14 @@ public class FactionsCommand implements CommandExecutor {
     private void handleClaim(Player player, String[] args) {
         com.primeleague.clans.models.ClanData clan = plugin.getClansPlugin().getClansManager().getClanByMember(player.getUniqueId());
         if (clan == null) {
-            player.sendMessage("§cVocê precisa de um clã.");
+            player.sendMessage(MessageHelper.error("Você precisa estar em um clã para usar este comando."));
             return;
         }
 
         // Verificar permissões (Leader ou Officer apenas)
         String role = plugin.getClansPlugin().getClansManager().getMemberRole(clan.getId(), player.getUniqueId());
         if (role == null || (!role.equals("LEADER") && !role.equals("OFFICER"))) {
-            player.sendMessage("§cApenas líderes e oficiais podem claimar territórios!");
+            player.sendMessage(MessageHelper.error("Apenas líderes e oficiais podem claimar territórios."));
             return;
         }
 
@@ -168,7 +169,7 @@ public class FactionsCommand implements CommandExecutor {
         // Validar mundo permitido
         java.util.List<String> allowedWorlds = plugin.getConfig().getStringList("claims.allowed-worlds");
         if (!allowedWorlds.isEmpty() && !allowedWorlds.contains(worldName)) {
-            player.sendMessage("§cClaims desativados neste mundo!");
+            player.sendMessage(MessageHelper.error("Claims desativados neste mundo."));
             return;
         }
 
@@ -192,26 +193,26 @@ public class FactionsCommand implements CommandExecutor {
                 // Verificar se clã ainda existe (pode ter sido deletado durante async)
                 com.primeleague.clans.models.ClanData currentClan = plugin.getClansPlugin().getClansManager().getClanByMember(player.getUniqueId());
                 if (currentClan == null || currentClan.getId() != finalClanId) {
-                    player.sendMessage("§cSeu clã não existe mais ou você foi removido.");
+                    player.sendMessage(MessageHelper.error("Seu clã não existe mais ou você foi removido."));
                     return;
                 }
 
                 // Verificar role novamente (pode ter mudado durante async)
                 String currentRole = plugin.getClansPlugin().getClansManager().getMemberRole(finalClanId, player.getUniqueId());
                 if (currentRole == null || (!currentRole.equals("LEADER") && !currentRole.equals("OFFICER"))) {
-                    player.sendMessage("§cVocê não tem mais permissão para claimar territórios!");
+                    player.sendMessage(MessageHelper.error("Você não tem mais permissão para claimar territórios."));
                     return;
                 }
 
                 if (maxClaims > 0 && currentClaims >= maxClaims) {
-                    player.sendMessage("§cClã sem power suficiente! Máximo: " + maxClaims + " claims (Power total: " + String.format("%.1f", totalPower) + ")");
+                    player.sendMessage(MessageHelper.error("Clã sem power suficiente! Máximo: " + MessageHelper.highlight(String.valueOf(maxClaims)) + " claims (Power total: " + String.format("%.1f", totalPower) + ")"));
                     return;
                 }
 
                 boolean success = plugin.getClaimManager().claimChunk(worldName, chunkX, chunkZ, finalClanId);
 
                 if (success) {
-                    player.sendMessage("§aTerritório conquistado!");
+                    player.sendMessage(MessageHelper.success("Território conquistado!"));
                     ParticleBorder.showChunkBorder(player, chunk.getWorld(), chunkX, chunkZ, Effect.FLAME);
 
                     // Notificar Discord
@@ -227,7 +228,7 @@ public class FactionsCommand implements CommandExecutor {
                         );
                     }
                 } else {
-                    player.sendMessage("§cEste território já possui dono.");
+                    player.sendMessage(MessageHelper.error("Este território já possui dono."));
                 }
             });
         });
@@ -244,12 +245,12 @@ public class FactionsCommand implements CommandExecutor {
         PendingConfirmation pending = pendingConfirmations.remove(playerUuid);
 
         if (pending == null) {
-            player.sendMessage("§cNenhuma confirmação pendente!");
+            player.sendMessage(MessageHelper.error("Nenhuma confirmação pendente."));
             return;
         }
 
         if (pending.isExpired()) {
-            player.sendMessage("§cConfirmação expirada! Execute o comando novamente.");
+            player.sendMessage(MessageHelper.error("Confirmação expirada! Execute o comando novamente."));
             return;
         }
 
@@ -259,14 +260,14 @@ public class FactionsCommand implements CommandExecutor {
             com.primeleague.clans.models.ClanData clan =
                 plugin.getClansPlugin().getClansManager().getClanByMember(player.getUniqueId());
             if (clan == null) {
-                player.sendMessage("§cVocê não está mais em um clan.");
+                player.sendMessage(MessageHelper.error("Você não está mais em um clan."));
                 return;
             }
 
             // CORREÇÃO: Verificar se chunk ainda existe e pertence ao clan
             org.bukkit.World world = plugin.getServer().getWorld(pending.worldName);
             if (world == null) {
-                player.sendMessage("§cMundo não encontrado!");
+                player.sendMessage(MessageHelper.error("Mundo não encontrado."));
                 return;
             }
 
@@ -274,7 +275,7 @@ public class FactionsCommand implements CommandExecutor {
             int ownerId = plugin.getClaimManager().getClanAt(chunk);
 
             if (ownerId != clan.getId() && !player.hasPermission("factions.admin")) {
-                player.sendMessage("§cEste território não pertence mais ao seu clan.");
+                player.sendMessage(MessageHelper.error("Este território não pertence mais ao seu clan."));
                 return;
             }
 
@@ -285,7 +286,7 @@ public class FactionsCommand implements CommandExecutor {
     private void handleUnclaim(Player player, String[] args) {
         com.primeleague.clans.models.ClanData clan = plugin.getClansPlugin().getClansManager().getClanByMember(player.getUniqueId());
         if (clan == null) {
-            player.sendMessage("§cVocê precisa de um clã.");
+            player.sendMessage(MessageHelper.error("Você precisa estar em um clã para usar este comando."));
             return;
         }
 
@@ -293,7 +294,7 @@ public class FactionsCommand implements CommandExecutor {
         int ownerId = plugin.getClaimManager().getClanAt(chunk);
 
         if (ownerId != clan.getId() && !player.hasPermission("factions.admin")) {
-            player.sendMessage("§cEste território não é seu.");
+            player.sendMessage(MessageHelper.error("Este território não pertence ao seu clã."));
             return;
         }
 
@@ -306,8 +307,8 @@ public class FactionsCommand implements CommandExecutor {
 
         // Se já tem confirmação pendente, avisar
         if (pending != null && pending.type == ActionType.UNCLAIM) {
-            player.sendMessage("§eConfirmação pendente! Use §6/f confirm §epara confirmar.");
-            player.sendMessage("§7Ou espere 30 segundos para a confirmação expirar.");
+            player.sendMessage(MessageHelper.warning("Confirmação pendente! Use " + MessageHelper.highlight("/f confirm") + " para confirmar."));
+            player.sendMessage(ChatColor.GRAY + "Ou espere 30 segundos para a confirmação expirar.");
             return;
         }
 
@@ -318,9 +319,9 @@ public class FactionsCommand implements CommandExecutor {
             chunk.getX(),
             chunk.getZ()
         ));
-        player.sendMessage("§c⚠ ATENÇÃO: Você está prestes a abandonar este território!");
-        player.sendMessage("§eUse §6/f confirm §epara confirmar ou espere 30 segundos para cancelar.");
-        player.sendMessage("§7Território: §f" + chunk.getWorld().getName() + " §7(" + chunk.getX() + ", " + chunk.getZ() + ")");
+        player.sendMessage(MessageHelper.warning("ATENÇÃO: Você está prestes a abandonar este território!"));
+        player.sendMessage(MessageHelper.info("Use " + MessageHelper.highlight("/f confirm") + " para confirmar ou espere 30 segundos para cancelar."));
+        player.sendMessage(ChatColor.GRAY + "Território: " + ChatColor.WHITE + chunk.getWorld().getName() + ChatColor.GRAY + " (" + chunk.getX() + ", " + chunk.getZ() + ")");
     }
 
     /**
@@ -329,7 +330,7 @@ public class FactionsCommand implements CommandExecutor {
     private void executeUnclaim(Player player, Chunk chunk, com.primeleague.clans.models.ClanData clan) {
         boolean success = plugin.getClaimManager().unclaimChunk(chunk.getWorld().getName(), chunk.getX(), chunk.getZ());
         if (success) {
-            player.sendMessage("§aTerritório abandonado.");
+            player.sendMessage(MessageHelper.success("Território abandonado."));
 
             // Notificar Discord
             if (plugin.getDiscordIntegration() != null && plugin.getDiscordIntegration().isEnabled()) {
@@ -344,7 +345,7 @@ public class FactionsCommand implements CommandExecutor {
                 );
             }
         } else {
-            player.sendMessage("§cEste território não estava conquistado.");
+            player.sendMessage(MessageHelper.error("Este território não estava conquistado."));
         }
     }
 
@@ -383,14 +384,14 @@ public class FactionsCommand implements CommandExecutor {
         com.primeleague.clans.models.ClanData clan =
             plugin.getClansPlugin().getClansManager().getClanByMember(player.getUniqueId());
         if (clan == null) {
-            player.sendMessage("§cVocê precisa de um clã.");
+            player.sendMessage(MessageHelper.error("Você precisa estar em um clã para usar este comando."));
             return;
         }
 
         // Verificar permissões
         String role = plugin.getClansPlugin().getClansManager().getMemberRole(clan.getId(), player.getUniqueId());
         if (role == null || (!role.equals("LEADER") && !role.equals("OFFICER"))) {
-            player.sendMessage("§cApenas líderes e oficiais!");
+            player.sendMessage(MessageHelper.error("Apenas líderes e oficiais podem usar este comando."));
             return;
         }
 
@@ -413,7 +414,7 @@ public class FactionsCommand implements CommandExecutor {
         try {
             int hours = Integer.parseInt(args[1]);
             if (hours < 1 || hours > 168) {
-                player.sendMessage("§cHoras inválidas (1-168)");
+                player.sendMessage(MessageHelper.error("Horas inválidas. Use um valor entre 1 e 168 horas."));
                 return;
             }
 
@@ -421,8 +422,8 @@ public class FactionsCommand implements CommandExecutor {
             long balance = plugin.getClansPlugin().getClansManager().getClanBalance(clan.getId());
 
             if (balance < cost) {
-                player.sendMessage("§cSaldo insuficiente! Custo: $" + String.format("%.2f", cost/100.0) +
-                    " | Saldo: $" + String.format("%.2f", balance/100.0));
+                player.sendMessage(MessageHelper.error("Saldo insuficiente! Custo: " + MessageHelper.highlight("$" + String.format("%.2f", cost/100.0)) + 
+                    " | Saldo: $" + String.format("%.2f", balance/100.0)));
                 return;
             }
 
@@ -432,7 +433,7 @@ public class FactionsCommand implements CommandExecutor {
 
                 plugin.getServer().getScheduler().runTask(plugin, () -> {
                     if (success) {
-                        player.sendMessage("§a🛡 Shield ativado por " + hours + "h!");
+                        player.sendMessage(MessageHelper.success("🛡 Shield ativado por " + MessageHelper.highlight(hours + "h") + "!"));
 
                         // Mostrar ActionBar uma vez após ativar (feedback imediato)
                         long newRemaining = plugin.getShieldManager().getRemainingMinutes(clan.getId());
@@ -442,12 +443,12 @@ public class FactionsCommand implements CommandExecutor {
                             player, color + "🛡 Shield: " + formatted
                         );
                     } else {
-                        player.sendMessage("§cErro ao ativar shield!");
+                        player.sendMessage(MessageHelper.error("Erro ao ativar shield."));
                     }
                 });
             });
         } catch (NumberFormatException e) {
-            player.sendMessage("§cUso: /f shield <horas>");
+            player.sendMessage(MessageHelper.error("Uso: /f shield <horas>"));
         }
     }
 }
