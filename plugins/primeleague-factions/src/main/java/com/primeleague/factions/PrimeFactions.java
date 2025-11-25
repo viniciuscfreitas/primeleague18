@@ -11,6 +11,7 @@ import com.primeleague.factions.listener.ProtectionListener;
 import com.primeleague.factions.manager.ClaimManager;
 import com.primeleague.factions.manager.FlyManager;
 import com.primeleague.factions.manager.PowerManager;
+import com.primeleague.factions.manager.ShieldManager;
 import com.primeleague.factions.manager.UpgradeManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -28,6 +29,7 @@ public class PrimeFactions extends JavaPlugin {
     private DynmapIntegration dynmapIntegration;
     private FlyManager flyManager;
     private UpgradeManager upgradeManager;
+    private ShieldManager shieldManager;
 
     @Override
     public void onEnable() {
@@ -58,6 +60,7 @@ public class PrimeFactions extends JavaPlugin {
         this.dynmapIntegration = new DynmapIntegration(this);
         this.flyManager = new FlyManager(this);
         this.upgradeManager = new UpgradeManager(this);
+        this.shieldManager = new ShieldManager(this);
 
         // 4.1. Setup Dynmap Integration (soft dependency)
         this.dynmapIntegration.setup();
@@ -84,6 +87,9 @@ public class PrimeFactions extends JavaPlugin {
 
         // 8. Task periódica: Remover chunks quando power total fica negativo
         startPowerNegativeCheckTask();
+
+        // 9. Task: ActionBar quando shield < 12h + notificação quando zera
+        startShieldDisplayTask();
 
         getLogger().info("PrimeleagueFactions (Legendary Edition) habilitado!");
     }
@@ -133,6 +139,10 @@ public class PrimeFactions extends JavaPlugin {
 
     public UpgradeManager getUpgradeManager() {
         return upgradeManager;
+    }
+
+    public ShieldManager getShieldManager() {
+        return shieldManager;
     }
 
     private void setupDatabase() {
@@ -189,6 +199,11 @@ public class PrimeFactions extends JavaPlugin {
             // 6. Index for solo builds lookups
             try {
                 stmt.execute("CREATE INDEX idx_solo_builds_owner ON solo_builds(owner_uuid)");
+            } catch (SQLException ignored) {}
+
+            // 7. Shield timestamp column
+            try {
+                stmt.execute("ALTER TABLE clans ADD COLUMN shield_expires_at TIMESTAMP");
             } catch (SQLException ignored) {}
 
             getLogger().info("Banco de dados configurado com sucesso.");
@@ -291,5 +306,52 @@ public class PrimeFactions extends JavaPlugin {
                 });
             }
         }.runTaskTimerAsynchronously(this, 6000L, 6000L); // A cada 5 minutos
+    }
+
+    /**
+     * Task: Mostra ActionBar quando shield < 12h (crítico)
+     * Grug Brain: Tela limpa 95% do tempo, alerta quando importa
+     */
+    private void startShieldDisplayTask() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (org.bukkit.entity.Player player : getServer().getOnlinePlayers()) {
+                    com.primeleague.clans.models.ClanData clan =
+                        getClansPlugin().getClansManager().getClanByMember(player.getUniqueId());
+                    if (clan == null) continue;
+
+                    long remaining = shieldManager.getRemainingMinutes(clan.getId());
+
+                    // ActionBar só aparece se shield < 12h (crítico)
+                    if (remaining > 0 && remaining < 720) { // < 12h
+                        String shieldText = shieldManager.formatRemaining(clan.getId());
+
+                        // Cor vermelha se < 6h, amarela se < 12h
+                        String color = remaining < 360 ? "§c" : "§e";
+
+                        // Paper 1.8.8: usar ActionBarCompat (NMS v1_8_R3)
+                        com.primeleague.factions.util.ActionBarCompat.send(
+                            player, color + "🛡 Shield: " + shieldText
+                        );
+                    }
+
+                    // Notificar quando shield acaba (uma vez, não spam)
+                    if (remaining == 0 && !shieldManager.wasNotified(clan.getId())) {
+                        player.sendMessage("§c⚠ Shield acabou! Raids liberados!");
+                        // Paper 1.8.8: sendTitle via reflection (não aceita parâmetros de tempo)
+                        try {
+                            player.getClass().getMethod("sendTitle", String.class, String.class)
+                                .invoke(player, "§c⚠", "§4Shield Zerado");
+                        } catch (Exception ignored) {
+                            // Fallback: apenas mensagem no chat
+                        }
+                        player.playSound(player.getLocation(),
+                            org.bukkit.Sound.WITHER_DEATH, 0.5f, 1.0f);
+                        shieldManager.markNotified(clan.getId());
+                    }
+                }
+            }
+        }.runTaskTimer(this, 20L, 20L); // A cada segundo
     }
 }

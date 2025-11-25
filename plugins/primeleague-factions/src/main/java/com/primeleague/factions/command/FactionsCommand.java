@@ -57,6 +57,9 @@ public class FactionsCommand implements CommandExecutor {
             case "upgrade":
                 handleUpgrade(player);
                 break;
+            case "shield":
+                handleShield(player, args);
+                break;
             default:
                 sendHelp(player);
                 break;
@@ -73,6 +76,7 @@ public class FactionsCommand implements CommandExecutor {
         player.sendMessage("§6/f power §f- Ver seu poder.");
         player.sendMessage("§6/f fly §f- Ativar/Desativar voo em território.");
         player.sendMessage("§6/f upgrade §f- Abrir menu de upgrades.");
+        player.sendMessage("§6/f shield [horas] §f- Ver/Ativar shield do clã.");
     }
 
     private void handleUpgrade(Player player) {
@@ -229,5 +233,77 @@ public class FactionsCommand implements CommandExecutor {
     private void handlePower(Player player) {
         double power = plugin.getPowerManager().getPower(player.getUniqueId());
         player.sendMessage("§eSeu Poder: §f" + String.format("%.2f", power));
+    }
+
+    private void handleShield(Player player, String[] args) {
+        com.primeleague.clans.models.ClanData clan =
+            plugin.getClansPlugin().getClansManager().getClanByMember(player.getUniqueId());
+        if (clan == null) {
+            player.sendMessage("§cVocê precisa de um clã.");
+            return;
+        }
+
+        // Verificar permissões
+        String role = plugin.getClansPlugin().getClansManager().getMemberRole(clan.getId(), player.getUniqueId());
+        if (role == null || (!role.equals("LEADER") && !role.equals("OFFICER"))) {
+            player.sendMessage("§cApenas líderes e oficiais!");
+            return;
+        }
+
+        if (args.length < 2) {
+            // Mostrar status atual
+            long remaining = plugin.getShieldManager().getRemainingMinutes(clan.getId());
+            if (remaining == 0) {
+                player.sendMessage("§c🛡 Shield: §4ZERADO");
+                player.sendMessage("§7Use: §6/f shield <horas> §7para ativar (ex: /f shield 72)");
+            } else {
+                String formatted = plugin.getShieldManager().formatRemaining(clan.getId());
+                player.sendMessage("§e🛡 Shield: " + formatted);
+                player.sendMessage("§7Use: §6/f shield <horas> §7para adicionar tempo");
+                player.sendMessage("§7Custo: §650k por hora");
+            }
+            return;
+        }
+
+        // Comprar shield: /f shield 24
+        try {
+            int hours = Integer.parseInt(args[1]);
+            if (hours < 1 || hours > 168) {
+                player.sendMessage("§cHoras inválidas (1-168)");
+                return;
+            }
+
+            long cost = hours * 50000L;
+            long balance = plugin.getClansPlugin().getClansManager().getClanBalance(clan.getId());
+
+            if (balance < cost) {
+                player.sendMessage("§cSaldo insuficiente! Custo: $" + String.format("%.2f", cost/100.0) +
+                    " | Saldo: $" + String.format("%.2f", balance/100.0));
+                return;
+            }
+
+            // Ativar shield (async para não bloquear)
+            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+                boolean success = plugin.getShieldManager().activateShield(clan.getId(), hours);
+
+                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    if (success) {
+                        player.sendMessage("§a🛡 Shield ativado por " + hours + "h!");
+
+                        // Mostrar ActionBar uma vez após ativar (feedback imediato)
+                        long newRemaining = plugin.getShieldManager().getRemainingMinutes(clan.getId());
+                        String formatted = plugin.getShieldManager().formatRemaining(clan.getId());
+                        String color = newRemaining < 720 ? "§e" : "§a";
+                        com.primeleague.factions.util.ActionBarCompat.send(
+                            player, color + "🛡 Shield: " + formatted
+                        );
+                    } else {
+                        player.sendMessage("§cErro ao ativar shield!");
+                    }
+                });
+            });
+        } catch (NumberFormatException e) {
+            player.sendMessage("§cUso: /f shield <horas>");
+        }
     }
 }
