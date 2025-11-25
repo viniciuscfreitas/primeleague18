@@ -19,6 +19,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PrimeFactions extends JavaPlugin {
 
@@ -31,6 +33,9 @@ public class PrimeFactions extends JavaPlugin {
     private UpgradeManager upgradeManager;
     private ShieldManager shieldManager;
     private FactionsCommand factionsCommand;
+
+    // HUD toggle por player (UUID -> enabled)
+    private final ConcurrentHashMap<UUID, Boolean> hudEnabled = new ConcurrentHashMap<>();
 
     @Override
     public void onEnable() {
@@ -94,6 +99,9 @@ public class PrimeFactions extends JavaPlugin {
 
         // 9. Task: ActionBar quando shield < 12h + notificação quando zera
         startShieldDisplayTask();
+
+        // 10. Task: HUD contextual (Fase 2)
+        startHudTask();
 
         getLogger().info("PrimeleagueFactions (Legendary Edition) habilitado!");
     }
@@ -357,6 +365,43 @@ public class PrimeFactions extends JavaPlugin {
                         player.playSound(player.getLocation(),
                             org.bukkit.Sound.WITHER_DEATH, 0.5f, 1.0f);
                         shieldManager.markNotified(clan.getId());
+                    }
+                }
+            }
+        }.runTaskTimer(this, 20L, 20L); // A cada segundo
+    }
+
+    /**
+     * Toggle HUD para um player
+     */
+    public boolean toggleHud(UUID playerUuid) {
+        boolean current = hudEnabled.getOrDefault(playerUuid, false);
+        boolean newValue = !current;
+        hudEnabled.put(playerUuid, newValue);
+        return newValue;
+    }
+
+    /**
+     * Verifica se HUD está ativado para um player
+     */
+    public boolean isHudEnabled(UUID playerUuid) {
+        return hudEnabled.getOrDefault(playerUuid, false);
+    }
+
+    /**
+     * Task: Atualiza ActionBar HUD para players com HUD ativado
+     * Grug Brain: Atualiza apenas players que têm HUD ativado (evita spam)
+     */
+    private void startHudTask() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (org.bukkit.entity.Player player : getServer().getOnlinePlayers()) {
+                    if (isHudEnabled(player.getUniqueId())) {
+                        // Atualizar HUD via FactionsCommand
+                        if (factionsCommand != null) {
+                            factionsCommand.updateHudForPlayer(player);
+                        }
                     }
                 }
             }

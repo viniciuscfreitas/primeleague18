@@ -36,6 +36,9 @@ public class CorePlugin extends JavaPlugin {
         // Registrar listener para desativar mensagens padrão
         getServer().getPluginManager().registerEvents(new DefaultMessagesListener(this), this);
 
+        // Registrar consolidador de recompensas PvP (Fase 2)
+        getServer().getPluginManager().registerEvents(new com.primeleague.core.listeners.PvPRewardConsolidator(this), this);
+
         getLogger().info("PrimeleagueCore habilitado - PostgreSQL conectado");
     }
 

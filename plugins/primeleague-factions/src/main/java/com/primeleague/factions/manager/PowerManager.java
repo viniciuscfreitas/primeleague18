@@ -154,34 +154,25 @@ public class PowerManager implements Listener {
     }
 
     /**
-     * Obtém max power do player (do cache ou padrão)
+     * Obtém power máximo do player
      */
     public double getMaxPower(UUID uuid) {
         return maxPowerCache.getOrDefault(uuid, maxPowerDefault);
     }
 
     /**
-     * Calcula power total de um clã (soma de todos os membros)
-     * Grug Brain: Query direta no DB (como getTotalKills) - inclui online + offline
-     * Usa cache quando possível para players online, mas busca do DB para offline
+     * Calcula power total do clan (soma de todos os membros)
      */
     public double getClanTotalPower(int clanId) {
         double total = 0.0;
-        try (Connection conn = CoreAPI.getDatabase().getConnection();
-             PreparedStatement stmt = conn.prepareStatement(
-                "SELECT COALESCE(SUM(u.power), 0) as total_power " +
-                "FROM clan_members cm " +
-                "JOIN users u ON cm.player_uuid = u.uuid " +
-                "WHERE cm.clan_id = ?")) {
-            stmt.setInt(1, clanId);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    total = rs.getDouble("total_power");
-                }
+        try {
+            java.util.List<com.primeleague.clans.models.ClanMember> members = 
+                plugin.getClansPlugin().getClansManager().getMembers(clanId);
+            for (com.primeleague.clans.models.ClanMember member : members) {
+                total += powerCache.getOrDefault(member.getPlayerUuid(), 0.0);
             }
-        } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "Erro ao calcular power total do clã " + clanId, e);
+        } catch (Exception e) {
+            plugin.getLogger().fine("Erro ao calcular power total do clan " + clanId + ": " + e.getMessage());
         }
         return total;
     }
@@ -225,9 +216,7 @@ public class PowerManager implements Listener {
                     maxPowerCache.put(uuid, maxPower);
                 } else {
                     // New player or not in DB yet (Core handles creation, but maybe delayed)
-                    // Grug Brain: Usar valor do config (initial-power)
-                    double initialPower = plugin.getConfig().getDouble("power.initial-power", 0.0);
-                    powerCache.put(uuid, initialPower);
+                    powerCache.put(uuid, 0.0); // Start with 0 or config default? User said "Start with 0"
                     maxPowerCache.put(uuid, maxPowerDefault);
                 }
             } catch (SQLException e) {

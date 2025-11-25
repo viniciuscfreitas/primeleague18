@@ -32,8 +32,60 @@ public class CombatListener implements Listener {
     // Tempo máximo para considerar PvP indireto (5 segundos)
     private static final long PVP_INDIRECT_TIMEOUT_MS = 5000;
 
+    // Cache temporário para killstreak (UUID -> KillstreakData)
+    // TTL: 5 segundos (suficiente para consolidator processar)
+    private static final ConcurrentHashMap<UUID, KillstreakData> killstreakCache = new ConcurrentHashMap<>();
+    private static final long CACHE_TTL_MS = 5000; // 5 segundos
+
+    /**
+     * Classe simples para armazenar killstreak
+     */
+    private static class KillstreakData {
+        final int killstreak;
+        final long timestamp;
+
+        KillstreakData(int killstreak) {
+            this.killstreak = killstreak;
+            this.timestamp = System.currentTimeMillis();
+        }
+
+        boolean isExpired() {
+            return System.currentTimeMillis() - timestamp > CACHE_TTL_MS;
+        }
+    }
+
     public CombatListener(StatsPlugin plugin) {
         this.plugin = plugin;
+
+        // Task periódica para limpar cache expirado (a cada 30s)
+        plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+            cleanupExpiredCache();
+        }, 600L, 600L); // A cada 30 segundos
+    }
+
+    /**
+     * Limpa cache expirado
+     */
+    private static void cleanupExpiredCache() {
+        killstreakCache.entrySet().removeIf(entry -> entry.getValue().isExpired());
+    }
+
+    /**
+     * API pública estática para consolidator acessar killstreak
+     */
+    public static Integer getKillstreak(UUID playerUuid) {
+        KillstreakData data = killstreakCache.get(playerUuid);
+        if (data == null || data.isExpired()) {
+            return null;
+        }
+        return data.killstreak;
+    }
+
+    /**
+     * Limpa cache de killstreak para um player
+     */
+    public static void clearKillstreak(UUID playerUuid) {
+        killstreakCache.remove(playerUuid);
     }
 
     /**
@@ -126,34 +178,12 @@ public class CombatListener implements Listener {
                     plugin.getLogger().info("Stats atualizadas: " + finalKiller.getName() +
                         " (Kills: " + killerData.getKills() + ", Killstreak: " + newKillstreak + ", Best: " + bestKillstreak + ")");
 
-                    // Preparar mensagens (não enviar aqui - thread async)
-                    final String killMsg = plugin.getConfig().getString("messages.kill", "")
-                        .replace("{killstreak}", String.valueOf(newKillstreak));
-                    final boolean hasKillMsg = !killMsg.isEmpty();
-
-                    final String milestoneMsg;
-                    final boolean hasMilestoneMsg;
-                    if (newKillstreak > 0 && newKillstreak % 5 == 0) {
-                        milestoneMsg = plugin.getConfig().getString("messages.killstreak-milestone", "")
-                            .replace("{killstreak}", String.valueOf(newKillstreak));
-                        hasMilestoneMsg = !milestoneMsg.isEmpty();
-                    } else {
-                        milestoneMsg = "";
-                        hasMilestoneMsg = false;
+                    // Fase 2: Armazenar killstreak em cache temporário para consolidação
+                    // Ao invés de enviar mensagem imediatamente, armazena no cache
+                    // O PvPRewardConsolidator no Core buscará e consolidará com outras recompensas
+                    if (newKillstreak > 0) {
+                        killstreakCache.put(finalKiller.getUniqueId(), new KillstreakData(newKillstreak));
                     }
-
-                    // Voltar à thread principal para enviar mensagens (Bukkit API não é thread-safe)
-                    new BukkitRunnable() {
-                        @Override
-                        public void run() {
-                            if (hasKillMsg && finalKiller.isOnline()) {
-                                finalKiller.sendMessage(killMsg);
-                            }
-                            if (hasMilestoneMsg && finalKiller.isOnline()) {
-                                finalKiller.sendMessage(milestoneMsg);
-                            }
-                        }
-                    }.runTask(plugin);
                 }
 
                 plugin.getLogger().info("Stats atualizadas: " + victim.getName() +
