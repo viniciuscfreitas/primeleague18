@@ -176,45 +176,40 @@ public class UpgradeManager {
 
     /**
      * Carrega upgrades de um clã (com cache)
-     * Grug Brain: Thread-safe (ConcurrentHashMap), mas query pode ser async se necessário
+     * CORREÇÃO: Usa computeIfAbsent para thread-safety (evita múltiplas queries simultâneas)
+     * Grug Brain: Thread-safe, cache evita queries frequentes
      */
     public UpgradeData getUpgrades(int clanId) {
-        // Verificar cache
-        if (upgradeCache.containsKey(clanId)) {
-            return upgradeCache.get(clanId);
-        }
+        // CORREÇÃO: computeIfAbsent é thread-safe e evita múltiplas queries simultâneas
+        return upgradeCache.computeIfAbsent(clanId, k -> {
+            // Carregar do banco (síncrono - cache evita queries frequentes)
+            // Grug Brain: Query rápida, cache TTL implícito (invalidação manual)
+            try (Connection conn = CoreAPI.getDatabase().getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(
+                    "SELECT spawner_rate, crop_growth, exp_boost, extra_shield_hours " +
+                    "FROM faction_upgrades WHERE clan_id = ?")) {
+                stmt.setInt(1, clanId);
 
-        // Carregar do banco (síncrono - cache evita queries frequentes)
-        // Grug Brain: Query rápida, cache TTL implícito (invalidação manual)
-        try (Connection conn = CoreAPI.getDatabase().getConnection();
-             PreparedStatement stmt = conn.prepareStatement(
-                "SELECT spawner_rate, crop_growth, exp_boost, extra_shield_hours " +
-                "FROM faction_upgrades WHERE clan_id = ?")) {
-            stmt.setInt(1, clanId);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    UpgradeData data = new UpgradeData(
-                        clanId,
-                        rs.getInt("spawner_rate"),
-                        rs.getInt("crop_growth"),
-                        rs.getInt("exp_boost"),
-                        rs.getInt("extra_shield_hours")
-                    );
-                    upgradeCache.put(clanId, data);
-                    return data;
-                } else {
-                    // Criar registro padrão
-                    UpgradeData data = new UpgradeData(clanId, 0, 0, 0, 0);
-                    createUpgradeRecord(clanId);
-                    upgradeCache.put(clanId, data);
-                    return data;
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        return new UpgradeData(
+                            clanId,
+                            rs.getInt("spawner_rate"),
+                            rs.getInt("crop_growth"),
+                            rs.getInt("exp_boost"),
+                            rs.getInt("extra_shield_hours")
+                        );
+                    } else {
+                        // Criar registro padrão
+                        createUpgradeRecord(clanId);
+                        return new UpgradeData(clanId, 0, 0, 0, 0);
+                    }
                 }
+            } catch (SQLException e) {
+                plugin.getLogger().log(Level.SEVERE, "Erro ao carregar upgrades do clã " + clanId, e);
+                return new UpgradeData(clanId, 0, 0, 0, 0);
             }
-        } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "Erro ao carregar upgrades do clã " + clanId, e);
-            return new UpgradeData(clanId, 0, 0, 0, 0);
-        }
+        });
     }
 
     /**

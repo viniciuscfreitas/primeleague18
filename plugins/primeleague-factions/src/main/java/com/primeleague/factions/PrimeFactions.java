@@ -71,6 +71,7 @@ public class PrimeFactions extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new GenBucketListener(this), this);
         getServer().getPluginManager().registerEvents(new FlyListener(this), this);
         getServer().getPluginManager().registerEvents(new com.primeleague.factions.listener.UpgradeGUIListener(this), this);
+        getServer().getPluginManager().registerEvents(new com.primeleague.factions.listener.UpgradeEffectListener(this), this);
 
         // 6. Register Commands
         getCommand("f").setExecutor(new FactionsCommand(this));
